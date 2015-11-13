@@ -1,0 +1,101 @@
+建立项目：
+	加载资源：
+		brick.js, api.js, config.js, 
+		history.js, http.js, localstorage.js,
+		router.js, controller.js
+		/* brick.js引入在前,其他文件可无顺序 */
+	使用框架：
+		<script>
+			BK.config({
+				defController('index')
+			});
+			BK.start();
+			/*	架构给deplist和path配置项单独也单独开设了配置方法：
+				BK.deplist(obj);
+				BK.paths(obj);
+			*****/
+		</script>
+	配置信息:
+		cache: false // 是否使用localStorage进行模块缓存
+		hash: '' // 用于检测存储中的内容是否过期
+		paths: {modId:modPath} // 模块id对应的模块加载地址
+		deplist: {modId:[modId,]} // 模块id对应的依赖模块
+		comboUrl: fun(mods) // 设置函数,接收参数为要加载的模块数组,要求返回一个请求地址字符串
+		combo: false // 是否开启combo模式
+		baseUrl: '' // 请求模块的前缀地址
+		defController: '' //默认控制器,当url请求中没有解析到ct参数时使用
+		rootView: element //渲染视图的基础DOM,接受原生DOM
+		loading: element //页面跳转时显示的loading图,这里接受原生DOM元素
+		loadingDelay: 500 //页面跳转的loading图延迟显示
+		footerView: element //!敬请期待
+		ajaxTimeout: 15000 //发送ajax请求时的最长等待时间
+		ajaxDataType: 'json' //发送ajax请求时指定返回的结果类型
+		ajaxCache: false //发送ajax请求时,处理浏览器的缓存行为
+	业务脚本代码编写(index.js):
+		/* 模块ID需要和hash值中的ct值保持一致 */
+		define('index',[/*'$http',*/],function(require,exports,module){
+			return {
+				pageView: '<div id="page_index"></div>'
+				el: '#page_index',
+				init: function(params){},
+				enter: function(params){
+					this.el.innerHTML = 'Hello Brick.js';
+				},
+				leave: function(params){}
+			};
+			/* 上述对象也可以通过对exports赋值进行使用 */
+		});
+		/* 	pageView: 页面基本的html代码,这里建议结合使用工程化的文件嵌入功能
+			el: 页面元素的"选取表示",
+				在init,enter,leave函数内部使用this.el时,
+				如果页面引用了jQuery||zepto,则为jq(zpt)对象,否则是原生DOM
+			init: 第一次访问页面时触发,后续再次进入页面时不触发
+			enter: 进入页面时触发(在init之后触发)
+			leave: 页面离开时触发(在后者页面enter之前触发)
+			(params): 这是通过页面hash解析出来对象(这里不包含ct)
+		*****/
+	页面对象内部操作方法：
+		/* 这里的this指的是init,enter,leave函数内部 */
+		this.__hideLoading():
+			隐藏页面跳转的loading动画
+		this.__loading():
+			启用页面跳转的loading动画
+		this.__cleanCache():
+			清除页面的缓存(使用后,再次进入时会触发init方法)
+		this.__setScrollTop(y):
+			设置页面scrollTop值,如果不指定则默认是上一次离开时
+		this.__cleanScrollTop():
+			当再次进入本页面时,不会回复前一次离开时的scrollTop值
+	框架事件以及触发顺序:
+		/* BK.globalEvent(name,function(){}); */
+		afterRun(): 框架启动配置完之后触发(业务代码执行之前)
+		loadFail(modId): 当某个页面模块加载失败时触发
+		beforeEnter(params): 每次进入页面时触发(在页面的enter之前触发)
+		afterLeave(params): 每次离开页面时触发(在页面的leave之后触发)
+		/* 	触发顺序：
+			→ BK: afterRun 
+			→ PAGE: init
+			→ BK: beforeEnter
+			→ PAGE: enter
+			→ PAGE: leave
+			→ BK: afterLeave
+		*********/
+	工具方法:
+		alert(text,time):
+			轻微弹窗,使用前需要使用alert.setEl(element)进行设置
+		clone(obj):
+			复制一个简单对象
+		extend(obj,ext):
+			将ext的属性copy给obj
+		genPHash(page, params):
+			返回拼接后的hash地址(用于业务需要的页面地址)
+		history(commend,page,params):
+			作用同pushState/replaceState
+		link(page,params):
+			用于框架的页面跳转
+		parseHash(hashStr):
+			解析hash字符串成对象
+		parseSearch(searchStr):
+			解析search字符串成对象
+		stringifyHash(obj):
+			返回用于页面跳转的hash值
