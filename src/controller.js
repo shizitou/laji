@@ -48,7 +48,6 @@ define('$Compenent',['$template'],function (require,exports,module) {
         for(var i=origin.length-1;i>=0;i--){
             origin[i].className = origin[i].className+' '+profixClass;
         }
-
         return container.innerHTML;
     }
     module.exports = function (compId,compObj) {
@@ -74,7 +73,6 @@ define('$Compenent',['$template'],function (require,exports,module) {
     }
 });
 define('$template',[],function(require){
-
 	/****************
     这是从underscore源码中提取出来的模板引擎,
     源码中的调用方法是 _.template();
