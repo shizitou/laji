@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="index.css" />
+</head>
+<body>
+<div id="footer">
+	webSite footerView<br />
+	create by brick at 2015.3.26
+</div>
+<div id="js-global-loading"></div>
+<div id="js-global-alert"></div>
+</body>
+</html>
+<script>
+	/*载入框架*/
+	__inline('./brick/module.js');
+	__inline('./brick/module.ext.cache.js');
+	__inline('./brick/util.js');
+	__inline('./brick/config.js');
+	__inline('./brick/controller.js');
+	__inline('./brick/history.js');
+	__inline('./brick/http.js');
+	__inline('./brick/localstorage.js');
+	__inline('./brick/router.js');
+	__inline('./brick/template.js');
+	__inline('./brick/brick.js');
+	/*基础模块*/
+	__inline('./modules/zepto/zepto.inline.js');
+</script>
+<script>
+	BK.deplist({
+		'index': ['defer',
+			'comp-dataview3','comp-dataview4',
+			'comp-dataview','comp-dataview2',
+		],
+		'comp-dataview': ['comp-datahead','comp-datalist'],
+		'comp-dataview2': ['comp-datahead2','comp-datalist'],
+		'comp-dataview3': ['comp-datahead','comp-datalist2'],
+		'comp-dataview4': ['comp-datahead2','comp-datalist2'],
+	});
+	BK.paths({
+		'defer': './modules/defer.js',
+		'index': './pages/index/js/index.js',
+		'comp-dataview': './components/comp-dataview.js',
+		'comp-dataview2': './components/comp-dataview2.js',
+		'comp-dataview3': './components/comp-dataview3.js',
+		'comp-dataview4': './components/comp-dataview4.js',
+		'comp-datahead': './components/comp-datahead.js',
+		'comp-datahead2': './components/comp-datahead2.js',
+		'comp-datalist': './components/comp-datalist.js',
+		'comp-datalist2': './components/comp-datalist2.js',
+	});
+</script>
+<script>
+BK.config({
+	/* 默认控制器,老框架的ctac */
+	defController: 'index',
+	loading: document.querySelector('#js-global-loading'),
+	cache: true,
+	hash: '10.7.2'
+});
+
+BK.globalEvent('afterRun',function(){
+	BK.alert.setEl( document.querySelector('#js-global-alert') );
+});
+
+BK.globalEvent('loadFail', function(pageId){
+	console.error(pageId+' is load fail');
+});
+ 
+BK.start();
+</script>

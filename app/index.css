@@ -1,0 +1,12 @@
+*{
+	margin: 0;
+	padding: 0;
+}
+#footer{
+	text-align: center;
+	height: 40px;
+	width: 100%;
+	background: yellow;
+	border-top: 1px solid #000;
+}
+@import url('pages/index/css/index.css?__inline');
