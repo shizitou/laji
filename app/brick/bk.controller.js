@@ -1,5 +1,6 @@
 //负责业务模块的管理和控制
 define('$controller',['$config','$template'],function(require,exports){
+    'use strict';
 	var win = window,
         doc = win.document,
         config = require('$config'),

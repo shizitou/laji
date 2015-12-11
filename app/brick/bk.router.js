@@ -1,24 +1,25 @@
 //负责解析hash，监听hash的改变
-define('$history', ['$router', '$util', '$config'], function(require) {
-	//是否支持h5的state事件啊
-	var monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange',
-		router = require('$router'),
+define('$router', ['$controller','$util', '$config'], function(require) {
+	'use strict';
+	var config = require('$config'),
+		control = require('$controller'),
 		util = require('$util'),
-		config = require('$config');
+		//是否支持h5的state事件啊
+		monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange';
 
-	function History() {};
-	History.prototype = {
-		constructor: History,
+	function Router() {};
+	var proto = {
 		start: function(options) {
-			if (History.isStart)
+			if (Router.isStart)
 				return;
-			History.isStart = true;
+			Router.isStart = true;
 			//讲配置信息加载给$config
 			for (var n in options) {
 				config[n] = options[n];
 			}
-
-			router.init();
+			//默认控制器
+			this.defControl = config.defController;
+			control.init();
 			//获取当前路由碎片
 			this.fragment = this.getFragment()
 			var that = this;
@@ -49,10 +50,11 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 		},
 		fireRouteChange: function(hash) {
 			var option = {
-				formUser: History.fromUser
+				formUser: Router.fromUser
 			};
-			History.fromUser = undefined;
-			router.navigate(hash, option);
+			Router.fromUser = undefined;
+			var con = this.parseHash(hash);
+			control.firePageControl(con[0],con[1],option);
 		},
 		getFragment: function() {
 			// IE6直接用location.hash取hash，可能会取少一部分内容
@@ -71,10 +73,38 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 			if (path.indexOf("!/") === 0)
 				return path.slice(2)
 			return path;
+		},
+		parseHash: function(hash){
+			//返回 'ct.ac' 和 解析后的parse参数
+			var controller,
+				params = this.toObject(hash);
+			if(params['ct'] && params['ac']){
+				controller = params['ct']+params['ac'];
+				params['__page'] = controller;
+				delete params['ct'],delete params['ac'];
+			}else if(this.defControl){
+				controller = this.defControl;
+			}
+			if(controller){
+				return [controller,params];
+			}else{
+				throw new Error('页面不存在');
+			}
+		},
+		toObject: function(hash){
+			//返回 'ct.ac' 和 解析后的parse参数
+			var paramArr = hash.split('/'),
+				params = {},
+				i=0,j=paramArr.length,
+				de = decodeURIComponent;
+			for(;i<j;i=i+2){
+				paramArr[i] && (params[paramArr[i]] = de(paramArr[i+1]));
+			}
+			return params;
 		}
 	};
+	Router.prototype = proto;
 
-	// $.genUrl('def/in',{})
 	util.
 		set('genPHash', function(page, params) {
 			params = params || {};
@@ -91,21 +121,34 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 		})
 		// $.link('ct/ac',{})
 		.set('link', function(page, params) {
-			History.fromUser = true;
+			Router.fromUser = true;
 			window.location.hash = '!/' + this.genPHash(page, params);
 		})
 		// commend: 'replace','push'
 		.set('history', function(commend, page, params) {
 			window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 		})
-		.set('_getOriHash', function() {
-			return History.prototype.getFragment();
-		})
 		.set('stringifyHash', function(params) {
 			return '#!/' + this.genPHash('', params);
+		})
+		//解析页面中的hash参数
+		.set('parseHash', function(hash){
+			return proto.toObject(hash || proto.getFragment());
+		})
+		.set('parseSearch', function(search){
+			search = search || location.search;
+			search = search.split('&');
+			var ln = search.length-1,
+				option,
+				params = {},
+				de = decodeURIComponent;
+			for(;ln>=0;ln--){
+				option = search[ln];
+				params[option.split('=')[0]] = de(option.substr(option.indexOf('=')+1));
+			}
+			return params;
 		});
-		
 	//将收集到的util绑定到brick开放给外部
 
-	return new History;
+	return new Router;
 });

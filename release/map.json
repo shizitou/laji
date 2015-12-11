@@ -1,56 +1,30 @@
 {
     "res": {
-        "brick/brick.js": {
-            "uri": "/brick/brick.js",
-            "type": "js",
-            "deps": [
-                "$config",
-                "$history",
-                "$util"
-            ]
-        },
-        "brick/config.js": {
-            "uri": "/brick/config.js",
+        "brick/bk.config.js": {
+            "uri": "/brick/bk.config.js",
             "type": "js"
         },
-        "brick/controller.js": {
-            "uri": "/brick/controller.js",
+        "brick/bk.controller.js": {
+            "uri": "/brick/bk.controller.js",
             "type": "js",
             "deps": [
                 "$config",
                 "$template"
             ]
         },
-        "brick/history.js": {
-            "uri": "/brick/history.js",
-            "type": "js",
-            "deps": [
-                "$router",
-                "$util",
-                "$config"
-            ]
-        },
-        "brick/http.js": {
-            "uri": "/brick/http.js",
+        "brick/bk.http.js": {
+            "uri": "/brick/bk.http.js",
             "type": "js",
             "deps": [
                 "$config"
             ]
         },
-        "brick/localstorage.js": {
-            "uri": "/brick/localstorage.js",
+        "brick/bk.localstorage.js": {
+            "uri": "/brick/bk.localstorage.js",
             "type": "js"
         },
-        "brick/module.ext.cache.js": {
-            "uri": "/brick/module.ext.cache.js",
-            "type": "js"
-        },
-        "brick/module.js": {
-            "uri": "/brick/module.js",
-            "type": "js"
-        },
-        "brick/router.js": {
-            "uri": "/brick/router.js",
+        "brick/bk.router.js": {
+            "uri": "/brick/bk.router.js",
             "type": "js",
             "deps": [
                 "$config",
@@ -58,15 +32,32 @@
                 "$util"
             ]
         },
-        "brick/template.js": {
-            "uri": "/brick/template.js",
+        "brick/bk.template.js": {
+            "uri": "/brick/bk.template.js",
             "type": "js",
             "deps": [
                 "$template"
             ]
         },
-        "brick/util.js": {
-            "uri": "/brick/util.js",
+        "brick/bk.util.js": {
+            "uri": "/brick/bk.util.js",
+            "type": "js"
+        },
+        "brick/brick.js": {
+            "uri": "/brick/brick.js",
+            "type": "js",
+            "deps": [
+                "$router",
+                "$util",
+                "$config"
+            ]
+        },
+        "brick/module.ext.cache.js": {
+            "uri": "/brick/module.ext.cache.js",
+            "type": "js"
+        },
+        "brick/module.js": {
+            "uri": "/brick/module.js",
             "type": "js"
         },
         "components/comp-datahead.js": {

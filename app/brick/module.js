@@ -1,19 +1,15 @@
 (function(global, undefined) {
-	'use strict'
+	'use strict';
 	var moduleCache = {};
-	var isRunning = false;
 	var modCore = {
-		version: '1.0.0',
+		version: '3.0.0',
 		configs: {
-			prefix: '',
-			cache: false, // 是否使用ls进行模块缓存
-			hash: '', // 用于检测ls存储中的内容是否过期
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
 			comboUrl: null, // function (ids) { return url; }
 			combo: false, //是否启用combo
-			baseUrl: "", // 就和 seajs的 base是一样的
+			baseUrl: "", // 后面用来拼接path作为完整请求地址
 			maxUrlLength: 2000 // 拼接combo地址时,请求url的最大长度
 		}
 	};
@@ -389,17 +385,12 @@
 	modCore.config = function(obj) {
 		var options = coreConfig;
 		each(obj, function(value, key) {
-			var data = options[key],
-				t = type(data);
-			if (t === 'object') {
-				each(value, function(v, k) {
-					data[k] = v;
-				});
-			} else {
-				options[key]===undefined ?
-					(appConfig[key] = value) :
-					(options[key] = value) ;
-			}
+			var t = type(value);
+			if (t === 'object' || t === 'array') {
+				//如果配置中初始化的就是对象的话
+				value = JSON.parse(JSON.stringify(value));
+			};
+			options[key] = value;
 		});
 		// detect _debug=nocombo in location.search
 		if (/\b_debug=([\w,]+)\b/.test(location.search)) {

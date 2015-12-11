@@ -1,27 +1,28 @@
-define('$brick',['$history','$config','$util'],function(require,exports,module){
+define('$brick',['$router','$config','$util'],function(require,exports,module){
+	'use strict';
 	var BK;
-	var f = function(){};
 	var originModule = window.module;
 	delete window.module;
+	var f = function(){};
 	f.prototype = originModule;
 	BK = window.BK = new f();
 	
-	var configMod = require('$config');
-	var historyMod = require('$history');
+	var routerMod = require('$router');
 	var utilMod = require('$util');
 	var appConfig = {};
 	BK.config = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
-		appConfig = options;
+		filterConfig(options,appConfig);
 		originModule.config(options);
 	}
 	BK.start = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
 		if(options){
+			filterConfig(options,appConfig);
 			originModule.config(options);
 		}
 		//开启整个项目
-		historyMod.start(appConfig);
+		routerMod.start(appConfig);
 		utilMod.bindTo(BK);
 	};
 	BK.paths = function(paths){
@@ -48,6 +49,17 @@ define('$brick',['$history','$config','$util'],function(require,exports,module){
 						fn.apply(window,args);
 					};
 				}
+			}
+		}
+	}
+	var appConfigs = require('$config');
+	function filterConfig(from,to){
+		var item;
+		for(var n in appConfigs){
+			item = from[n];
+			if(typeof item!=='undefined'){
+				to[n] = item;
+				delete from[n];
 			}
 		}
 	}

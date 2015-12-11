@@ -18,21 +18,17 @@
 <script>
 	/*载入框架*/
 	(function(global, undefined) {
-	'use strict'
+	'use strict';
 	var moduleCache = {};
-	var isRunning = false;
 	var modCore = {
-		version: '1.0.0',
+		version: '3.0.0',
 		configs: {
-			prefix: '',
-			cache: false, // 是否使用ls进行模块缓存
-			hash: '', // 用于检测ls存储中的内容是否过期
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
 			comboUrl: null, // function (ids) { return url; }
 			combo: false, //是否启用combo
-			baseUrl: "", // 就和 seajs的 base是一样的
+			baseUrl: "", // 后面用来拼接path作为完整请求地址
 			maxUrlLength: 2000 // 拼接combo地址时,请求url的最大长度
 		}
 	};
@@ -408,17 +404,12 @@
 	modCore.config = function(obj) {
 		var options = coreConfig;
 		each(obj, function(value, key) {
-			var data = options[key],
-				t = type(data);
-			if (t === 'object') {
-				each(value, function(v, k) {
-					data[k] = v;
-				});
-			} else {
-				options[key]===undefined ?
-					(appConfig[key] = value) :
-					(options[key] = value) ;
-			}
+			var t = type(value);
+			if (t === 'object' || t === 'array') {
+				//如果配置中初始化的就是对象的话
+				value = JSON.parse(JSON.stringify(value));
+			};
+			options[key] = value;
 		});
 		// detect _debug=nocombo in location.search
 		if (/\b_debug=([\w,]+)\b/.test(location.search)) {
@@ -523,6 +514,7 @@
 		return ext;
 	}
 })(this);;
+	/*module.ext.*系列一定要放到module.js之*/
 	(function(){
 	function clean(prefixKey){
 		try {
@@ -708,8 +700,170 @@
 		ajaxCache: false
 	};
 });;
+	//模板引擎
+define('$Compenent',['$template'],function (require,exports,module) {
+    var $template = require('$template');
+    var compsList = {};
+    var rep_style = /((?:[^\{\}\s]+\s*)+)(\{.*?\})/g;
+    var rep_nodeName = /^\s*<(\w+)/;
+    var prefixId = 1;
+    var style = document.createElement('style');
+    var tableRow = document.createElement('tr');
+    var containers = {
+      'tr': document.createElement('tbody'),
+      'td': tableRow, 'th': tableRow,
+      '*': document.createElement('div')
+    };
+    document.head.appendChild(style);
+    function addStyle(css,prefixClass){
+        var lineCss,styleKey;
+        var result = "";
+        while(lineCss = rep_style.exec(css)){
+            styleKey = lineCss[1];
+            styleKey = styleKey.split(/,\s*/).map(function(cssStr){
+                return cssHandle(cssStr,'.'+prefixClass);
+            }).filter(function(cssStr){
+                return cssStr;
+            });
+            result += styleKey.join(',')+lineCss[2];
+        }
+        style.appendChild( document.createTextNode(result) );
+    }
+    function cssHandle(styleKey, prefixClass) {
+        var mainKey;
+        if (styleKey) {
+            styleKey = styleKey.split(/\s+/);
+            mainKey = styleKey.shift();
+            styleKey = styleKey.length ? ' ' + styleKey.join(' ') : '';
+            return mainKey + prefixClass + styleKey + ',' +
+                prefixClass + ' ' + mainKey + styleKey;
+        }
+        return '';
+    }
+    function addClassToRenView(origin,profixClass){
+        var nodeName,container;
+        nodeName = origin.match(rep_nodeName);
+        nodeName = nodeName && nodeName[1];
+        container = containers[nodeName] || containers['*'];
+        container.innerHTML = origin;
+        origin = container.children;
+        for(var i=origin.length-1;i>=0;i--){
+            origin[i].className = origin[i].className+' '+profixClass;
+        }
+        return container.innerHTML;
+    }
+    module.exports = function (compId,compObj) {
+        compObj.complie = $template(compObj.tpl);
+        compsList[compId] = {
+            resource: compObj,
+            compStyle: null
+        };
+        compObj = null;
+        return function(data) {
+            var compObj = compsList[compId];
+            var compResObj = compObj.resource;
+            var compStyle = compObj.compStyle;
+            //处理css到页面当中
+            if (compResObj.css && !compStyle) {
+                compObj.compStyle = compStyle = 'bkcomps-' + prefixId++;
+                addStyle(compResObj.css, compStyle);
+            }
+            return addClassToRenView(
+                compResObj.complie(data), compStyle
+            );
+        };
+    }
+});
+define('$template',[],function(require){
+	/****************
+    这是从underscore源码中提取出来的模板引擎,
+    源码中的调用方法是 _.template();
+    ****************/
+    return function(text, data) {
+        var compenent = {
+            require: function(compId,renderData){
+                return require(compId)(renderData || data);
+            }
+        };
+        //存放的是组合后的渲染函数
+        var render,
+            //匹配模板标签
+            settings = {
+                evaluate    : /<%([\s\S]+?)%>/g,
+                interpolate : /<%=([\s\S]+?)%>/g,
+                escape      : /<%-([\s\S]+?)%>/g
+            },
+            //转意成实体,用于过滤html标签
+            entityMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;'
+            },
+            //转意实体的调用方法,当遇到 <%- %> 时,调用
+            _escape = function (string) {
+                if (string == null) 
+                    return '';
+                return ('' + string).replace( /[&<>"']/g , function(match){
+                    return entityMap[ match ];
+                });
+            },
+            //转意空格之类的字符
+            escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g,
+            escapes = {
+                "'": "'",
+                '\\': '\\',
+                '\r': 'r',
+                '\n': 'n',
+                '\t': 't',
+                '\u2028': 'u2028',
+                '\u2029': 'u2029'
+            },
+            //解析模板标签的正则队列
+            matcher = new RegExp([
+                ( settings.escape ).source,
+                ( settings.interpolate ).source,
+                ( settings.evaluate ).source
+            ].join('|') + '|$', 'g'),
+            //最终拼接字符串时,跟中的下标
+            index = 0,
+            //最终执行的匹配后的字符串
+            source = "__p+='";
+        //拼接各种形式的语句 => source
+        text.replace(matcher, function(match, escape, interpolate, evaluate, offset){
+            source += text.slice(index, offset).replace(escaper, function(match){ 
+                return '\\' + escapes[match];
+            });
+            if(escape)
+                source += "'+\n((__t=(" + escape + "))==null?'':_escape(__t))+\n'";
+            if(interpolate)
+                source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+            if(evaluate)
+                source += "';\n" + evaluate + "\n__p+='";
+            index = offset + match.length;
+            return match;
+        });
+        source += "';\n";
+        source = 'with(obj||{}){\n' + source + '}\n';
+        source = "var __t,__p='',__j=Array.prototype.join," +
+            "print=function(){__p+=__j.call(arguments,'');};\n" +
+            source + "return __p;\n";
+        //这里可能会抛异常，请务必保持资源的合法性
+        render = new Function('obj', '_escape' , source);
+        //当没有传入data时 返回的方法: 颗粒模式
+        if(data===undefined)
+            return function( d ){
+                data = d;
+                return render.call(compenent,d, _escape );
+            };
+        else
+            return render.call(compenent,data, _escape );
+    };
+});;
 	//负责业务模块的管理和控制
 define('$controller',['$config','$template'],function(require,exports){
+    'use strict';
 	var win = window,
         doc = win.document,
         config = require('$config'),
@@ -967,26 +1121,27 @@ define('$controller',['$config','$template'],function(require,exports){
 	return controlMod;
 });;
 	//负责解析hash，监听hash的改变
-define('$history', ['$router', '$util', '$config'], function(require) {
-	//是否支持h5的state事件啊
-	var monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange',
-		router = require('$router'),
+define('$router', ['$controller','$util', '$config'], function(require) {
+	'use strict';
+	var config = require('$config'),
+		control = require('$controller'),
 		util = require('$util'),
-		config = require('$config');
+		//是否支持h5的state事件啊
+		monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange';
 
-	function History() {};
-	History.prototype = {
-		constructor: History,
+	function Router() {};
+	var proto = {
 		start: function(options) {
-			if (History.isStart)
+			if (Router.isStart)
 				return;
-			History.isStart = true;
+			Router.isStart = true;
 			//讲配置信息加载给$config
 			for (var n in options) {
 				config[n] = options[n];
 			}
-
-			router.init();
+			//默认控制器
+			this.defControl = config.defController;
+			control.init();
 			//获取当前路由碎片
 			this.fragment = this.getFragment()
 			var that = this;
@@ -1017,10 +1172,11 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 		},
 		fireRouteChange: function(hash) {
 			var option = {
-				formUser: History.fromUser
+				formUser: Router.fromUser
 			};
-			History.fromUser = undefined;
-			router.navigate(hash, option);
+			Router.fromUser = undefined;
+			var con = this.parseHash(hash);
+			control.firePageControl(con[0],con[1],option);
 		},
 		getFragment: function() {
 			// IE6直接用location.hash取hash，可能会取少一部分内容
@@ -1039,10 +1195,38 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 			if (path.indexOf("!/") === 0)
 				return path.slice(2)
 			return path;
+		},
+		parseHash: function(hash){
+			//返回 'ct.ac' 和 解析后的parse参数
+			var controller,
+				params = this.toObject(hash);
+			if(params['ct'] && params['ac']){
+				controller = params['ct']+params['ac'];
+				params['__page'] = controller;
+				delete params['ct'],delete params['ac'];
+			}else if(this.defControl){
+				controller = this.defControl;
+			}
+			if(controller){
+				return [controller,params];
+			}else{
+				throw new Error('页面不存在');
+			}
+		},
+		toObject: function(hash){
+			//返回 'ct.ac' 和 解析后的parse参数
+			var paramArr = hash.split('/'),
+				params = {},
+				i=0,j=paramArr.length,
+				de = decodeURIComponent;
+			for(;i<j;i=i+2){
+				paramArr[i] && (params[paramArr[i]] = de(paramArr[i+1]));
+			}
+			return params;
 		}
 	};
+	Router.prototype = proto;
 
-	// $.genUrl('def/in',{})
 	util.
 		set('genPHash', function(page, params) {
 			params = params || {};
@@ -1059,23 +1243,36 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 		})
 		// $.link('ct/ac',{})
 		.set('link', function(page, params) {
-			History.fromUser = true;
+			Router.fromUser = true;
 			window.location.hash = '!/' + this.genPHash(page, params);
 		})
 		// commend: 'replace','push'
 		.set('history', function(commend, page, params) {
 			window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 		})
-		.set('_getOriHash', function() {
-			return History.prototype.getFragment();
-		})
 		.set('stringifyHash', function(params) {
 			return '#!/' + this.genPHash('', params);
+		})
+		//解析页面中的hash参数
+		.set('parseHash', function(hash){
+			return proto.toObject(hash || proto.getFragment());
+		})
+		.set('parseSearch', function(search){
+			search = search || location.search;
+			search = search.split('&');
+			var ln = search.length-1,
+				option,
+				params = {},
+				de = decodeURIComponent;
+			for(;ln>=0;ln--){
+				option = search[ln];
+				params[option.split('=')[0]] = de(option.substr(option.indexOf('=')+1));
+			}
+			return params;
 		});
-		
 	//将收集到的util绑定到brick开放给外部
 
-	return new History;
+	return new Router;
 });;
 	define('$http',['$config'], function(require) {
 	//这里需要对zepto强化一些操作： then,when
@@ -1149,254 +1346,32 @@ define('$history', ['$router', '$util', '$config'], function(require) {
 		}
 	}
 });;
-	//负责 路由解析,调度各个页面模块
-define('$router',['$config','$controller','$util'],function(require,exports){
-	var config = require('$config'),
-		control = require('$controller'),
-		util = require('$util');
-	function Router(){};
-	Router.prototype = {
-		constructor: Router,
-		init: function(){
-			this.defControl = config.defController;
-			control.init();
-		},
-		navigate: function(hash,options){
-			var con = this.parseHash(hash);
-			control.firePageControl(con[0],con[1],options);
-		},
-		parseHash: function(hash){
-			//返回 'ct.ac' 和 解析后的parse参数
-			var controller,
-				params = this.toObject(hash);
-			if(params['ct'] && params['ac']){
-				controller = params['ct']+params['ac'];
-				params['__page'] = controller;
-				delete params['ct'],delete params['ac'];
-			}else if(this.defControl){
-				controller = this.defControl;
-			}
-			if(controller){
-				return [controller,params];
-			}else{
-				throw new Error('页面不存在');
-			}
-		},
-		toObject: function(hash){
-			//返回 'ct.ac' 和 解析后的parse参数
-			var paramArr = hash.split('/'),
-				params = {},
-				i=0,j=paramArr.length,
-				de = decodeURIComponent;
-			for(;i<j;i=i+2){
-				paramArr[i] && (params[paramArr[i]] = de(paramArr[i+1]));
-			}
-			return params;
-		}
-	};
-	//解析页面中的hash参数
-	util.set('parseHash', function(hash){
-		return Router.prototype.toObject(hash || this._getOriHash());
-	}).set('parseSearch', function(search){
-		search = search || location.search;
-		search = search.split('&');
-		var ln = search.length-1,
-			option,
-			params = {},
-			de = decodeURIComponent;
-		for(;ln>=0;ln--){
-			option = search[ln];
-			params[option.split('=')[0]] = de(option.substr(option.indexOf('=')+1));
-		}
-		return params;
-	});
-	return new Router;
-});;
-	//模板引擎
-define('$Compenent',['$template'],function (require,exports,module) {
-    var $template = require('$template');
-    var compsList = {};
-    var rep_style = /((?:[^\{\}\s]+\s*)+)(\{.*?\})/g;
-    var rep_nodeName = /^\s*<(\w+)/;
-    var prefixId = 1;
-    var style = document.createElement('style');
-    var tableRow = document.createElement('tr');
-    var containers = {
-      'tr': document.createElement('tbody'),
-      'td': tableRow, 'th': tableRow,
-      '*': document.createElement('div')
-    };
-    document.head.appendChild(style);
-    function addStyle(css,prefixClass){
-        var lineCss,styleKey;
-        var result = "";
-        while(lineCss = rep_style.exec(css)){
-            styleKey = lineCss[1];
-            styleKey = styleKey.split(/,\s*/).map(function(cssStr){
-                return cssHandle(cssStr,'.'+prefixClass);
-            }).filter(function(cssStr){
-                return cssStr;
-            });
-            result += styleKey.join(',')+lineCss[2];
-        }
-        style.appendChild( document.createTextNode(result) );
-    }
-    function cssHandle(styleKey, prefixClass) {
-        var mainKey;
-        if (styleKey) {
-            styleKey = styleKey.split(/\s+/);
-            mainKey = styleKey.shift();
-            styleKey = styleKey.length ? ' ' + styleKey.join(' ') : '';
-            return mainKey + prefixClass + styleKey + ',' +
-                prefixClass + ' ' + mainKey + styleKey;
-        }
-        return '';
-    }
-    function addClassToRenView(origin,profixClass){
-        var nodeName,container;
-        nodeName = origin.match(rep_nodeName);
-        nodeName = nodeName && nodeName[1];
-        container = containers[nodeName] || containers['*'];
-        container.innerHTML = origin;
-        origin = container.children;
-        for(var i=origin.length-1;i>=0;i--){
-            origin[i].className = origin[i].className+' '+profixClass;
-        }
-        return container.innerHTML;
-    }
-    module.exports = function (compId,compObj) {
-        compObj.complie = $template(compObj.tpl);
-        compsList[compId] = {
-            resource: compObj,
-            compStyle: null
-        };
-        compObj = null;
-        return function(data) {
-            var compObj = compsList[compId];
-            var compResObj = compObj.resource;
-            var compStyle = compObj.compStyle;
-            //处理css到页面当中
-            if (compResObj.css && !compStyle) {
-                compObj.compStyle = compStyle = 'bkcomps-' + prefixId++;
-                addStyle(compResObj.css, compStyle);
-            }
-            return addClassToRenView(
-                compResObj.complie(data), compStyle
-            );
-        };
-    }
-});
-define('$template',[],function(require){
-	/****************
-    这是从underscore源码中提取出来的模板引擎,
-    源码中的调用方法是 _.template();
-    ****************/
-    return function(text, data) {
-        var compenent = {
-            require: function(compId,renderData){
-                return require(compId)(renderData || data);
-            }
-        };
-        //存放的是组合后的渲染函数
-        var render,
-            //匹配模板标签
-            settings = {
-                evaluate    : /<%([\s\S]+?)%>/g,
-                interpolate : /<%=([\s\S]+?)%>/g,
-                escape      : /<%-([\s\S]+?)%>/g
-            },
-            //转意成实体,用于过滤html标签
-            entityMap = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#x27;'
-            },
-            //转意实体的调用方法,当遇到 <%- %> 时,调用
-            _escape = function (string) {
-                if (string == null) 
-                    return '';
-                return ('' + string).replace( /[&<>"']/g , function(match){
-                    return entityMap[ match ];
-                });
-            },
-            //转意空格之类的字符
-            escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g,
-            escapes = {
-                "'": "'",
-                '\\': '\\',
-                '\r': 'r',
-                '\n': 'n',
-                '\t': 't',
-                '\u2028': 'u2028',
-                '\u2029': 'u2029'
-            },
-            //解析模板标签的正则队列
-            matcher = new RegExp([
-                ( settings.escape ).source,
-                ( settings.interpolate ).source,
-                ( settings.evaluate ).source
-            ].join('|') + '|$', 'g'),
-            //最终拼接字符串时,跟中的下标
-            index = 0,
-            //最终执行的匹配后的字符串
-            source = "__p+='";
-        //拼接各种形式的语句 => source
-        text.replace(matcher, function(match, escape, interpolate, evaluate, offset){
-            source += text.slice(index, offset).replace(escaper, function(match){ 
-                return '\\' + escapes[match];
-            });
-            if(escape)
-                source += "'+\n((__t=(" + escape + "))==null?'':_escape(__t))+\n'";
-            if(interpolate)
-                source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-            if(evaluate)
-                source += "';\n" + evaluate + "\n__p+='";
-            index = offset + match.length;
-            return match;
-        });
-        source += "';\n";
-        source = 'with(obj||{}){\n' + source + '}\n';
-        source = "var __t,__p='',__j=Array.prototype.join," +
-            "print=function(){__p+=__j.call(arguments,'');};\n" +
-            source + "return __p;\n";
-        //这里可能会抛异常，请务必保持资源的合法性
-        render = new Function('obj', '_escape' , source);
-        //当没有传入data时 返回的方法: 颗粒模式
-        if(data===undefined)
-            return function( d ){
-                data = d;
-                return render.call(compenent,d, _escape );
-            };
-        else
-            return render.call(compenent,data, _escape );
-    };
-});;
-	define('$brick',['$history','$config','$util'],function(require,exports,module){
+	/*这个文件一定要放最后,因为涉及到 module.use 的使用*/
+	define('$brick',['$router','$config','$util'],function(require,exports,module){
+	'use strict';
 	var BK;
-	var f = function(){};
 	var originModule = window.module;
 	delete window.module;
+	var f = function(){};
 	f.prototype = originModule;
 	BK = window.BK = new f();
 	
-	var configMod = require('$config');
-	var historyMod = require('$history');
+	var routerMod = require('$router');
 	var utilMod = require('$util');
 	var appConfig = {};
 	BK.config = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
-		appConfig = options;
+		filterConfig(options,appConfig);
 		originModule.config(options);
 	}
 	BK.start = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
 		if(options){
+			filterConfig(options,appConfig);
 			originModule.config(options);
 		}
 		//开启整个项目
-		historyMod.start(appConfig);
+		routerMod.start(appConfig);
 		utilMod.bindTo(BK);
 	};
 	BK.paths = function(paths){
@@ -1426,8 +1401,20 @@ define('$template',[],function(require){
 			}
 		}
 	}
+	var appConfigs = require('$config');
+	function filterConfig(from,to){
+		var item;
+		for(var n in appConfigs){
+			item = from[n];
+			if(typeof item!=='undefined'){
+				to[n] = item;
+				delete from[n];
+			}
+		}
+	}
 });
 module.use('$brick');;
+	
 	/*基础模块*/
 	//     Zepto.js
 //     (c) 2010-2015 Thomas Fuchs
@@ -3289,7 +3276,7 @@ BK.config({
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
 	cache: true,
-	hash: '10.7.2'
+	hash: '10.7.3'
 });
 
 BK.globalEvent('afterRun',function(){
@@ -3299,6 +3286,6 @@ BK.globalEvent('afterRun',function(){
 BK.globalEvent('loadFail', function(pageId){
 	console.error(pageId+' is load fail');
 });
- 
+
 BK.start();
 </script>

@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Document</title>
+	<script src="howler.js"></script>
+	<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<style>
+	#start{
+		width: 100px;height: 100px;
+	}
+</style>
+</head>
+<body>
+	<div id="start">start</div>
+</body>
+</html>
+<script>
+	var sound = new Howl({
+		urls: ['test.mp3'],
+		volume: 1,
+		onend: function() {
+			alert('Finished!');
+		}
+	});
+	var startBut = document.querySelector('#start');
+	startBut.onclick = function(){
+		sound.play();
+
+		setInterval(function(){
+			console.log(sound._duration,sound.pos());
+		},300);
+	}
+
+</script>
