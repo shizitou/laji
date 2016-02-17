@@ -149,6 +149,5 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			return params;
 		});
 	//将收集到的util绑定到brick开放给外部
-
 	return new Router;
 });
