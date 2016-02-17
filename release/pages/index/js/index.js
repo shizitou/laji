@@ -6,8 +6,7 @@ define('index', function(require) {
 	return {
 		el: '#page_index',
 		pageView: "<div id=\"page_index\">\r\n\t<div class=\"dataview js-dataView\">\r\n\t</div>\r\n</div>",
-		init: function(params) {
-		},
+		init: function(params) {},
 		enter: function(params) {
 			var data = {
 				"title": "包质量宠文，不看后悔",
@@ -25,8 +24,7 @@ define('index', function(require) {
 				"flag": "new"
 			};
 			var dataStr = template("<div>\r\n\t<%= this.require('comp-dataview') %>\r\n\t<%= this.require('comp-dataview2') %>\r\n\t<%= this.require('comp-dataview3') %>\r\n\t<%= this.require('comp-dataview4') %>\r\n</div>",data);
-			document.querySelector('.js-dataView').innerHTML = dataStr;
-			//
+			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 		},
 		leave: function() {}
 	}

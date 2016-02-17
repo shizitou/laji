@@ -1,3 +1,11 @@
+/*
+	TODO::
+	comboUrl的配置
+	数据的sessionStorage缓存的处理
+	fastClick的嵌入
+	UICompenent嵌入
+	数据视图绑定（大工程）
+**/
 (function(global, undefined) {
 	'use strict';
 	var moduleCache = {};

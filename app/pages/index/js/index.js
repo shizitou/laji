@@ -6,8 +6,7 @@ define('index', function(require) {
 	return {
 		el: '#page_index',
 		pageView: __inline('../html/index.html'),
-		init: function(params) {
-		},
+		init: function(params) {},
 		enter: function(params) {
 			var data = {
 				"title": "包质量宠文，不看后悔",
@@ -25,8 +24,7 @@ define('index', function(require) {
 				"flag": "new"
 			};
 			var dataStr = template(__inline('../tpl/index.tpl.html'),data);
-			document.querySelector('.js-dataView').innerHTML = dataStr;
-			//
+			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 		},
 		leave: function() {}
 	}

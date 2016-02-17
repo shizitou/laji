@@ -21,9 +21,10 @@ define('$brick',['$router','$config','$util'],function(require,exports,module){
 			filterConfig(options,appConfig);
 			originModule.config(options);
 		}
+		//将收集的API绑定给BK
+		utilMod.bindTo(BK);
 		//开启整个项目
 		routerMod.start(appConfig);
-		utilMod.bindTo(BK);
 	};
 	BK.paths = function(paths){
 		this.config({
@@ -37,7 +38,7 @@ define('$brick',['$router','$config','$util'],function(require,exports,module){
 	};
 	BK._event = {};
 	//globalEvent是为了兼容旧代码的调用
-	BK.bind = BK.globalEvent = function(){
+	BK.bind = BK.globalEvent = function(type,fn){
 		(BK._event[type] || (BK._event[type] = [])).push(fn);
 	};
 	BK.unbind = function(type,fn){

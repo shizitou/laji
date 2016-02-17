@@ -1,7 +1,9 @@
+/** 基础样式 **/
 *{
 	margin: 0;
 	padding: 0;
 }
+/** 公共样式 **/
 #footer{
 	text-align: center;
 	height: 40px;
@@ -9,4 +11,5 @@
 	background: yellow;
 	border-top: 1px solid #000;
 }
+/** 各页面样式 **/
 @import url('pages/index/css/index.css?__inline');

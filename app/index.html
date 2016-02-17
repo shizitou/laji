@@ -16,10 +16,11 @@
 </body>
 </html>
 <script>
-	/*载入框架*/
+	/* 载入框架 */
 	__inline('./brick/module.js');
-	/*module.ext.*系列一定要放到module.js之*/
+	/* module.ext.*系列一定要放到module.js之后 */
 	__inline('./brick/module.ext.cache.js');
+	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
 	__inline('./brick/bk.config.js');
 	__inline('./brick/bk.template.js');
@@ -27,16 +28,15 @@
 	__inline('./brick/bk.router.js');
 	__inline('./brick/bk.http.js');
 	__inline('./brick/bk.localstorage.js');
-	/*这个文件一定要放最后,因为涉及到 module.use 的使用*/
+	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	__inline('./brick/brick.js');
 	
-	/*基础模块*/
+	/* 其他业务基础模块(非必须) */
 	__inline('./modules/zepto/zepto.inline.js');
 </script>
 <script>
 	BK.deplist({
-		'index': ['defer',
-			'comp-dataview3','comp-dataview4',
+		'index': ['comp-dataview3','comp-dataview4',
 			'comp-dataview','comp-dataview2',
 		],
 		'comp-dataview': ['comp-datahead','comp-datalist'],
@@ -45,7 +45,6 @@
 		'comp-dataview4': ['comp-datahead2','comp-datalist2'],
 	});
 	BK.paths({
-		'defer': './modules/defer.js',
 		'index': './pages/index/js/index.js',
 		'comp-dataview': './components/comp-dataview.js',
 		'comp-dataview2': './components/comp-dataview2.js',
@@ -62,8 +61,8 @@ BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	cache: true,
-	hash: '10.7.3'
+	cache: false,
+	hash: '3.0.0'
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

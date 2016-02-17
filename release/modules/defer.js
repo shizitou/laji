@@ -1,7 +1,3 @@
-/******
-eg:
-		
-******/
 define('defer', function() {
 	// id: list
 	var defs = {};

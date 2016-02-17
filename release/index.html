@@ -16,8 +16,16 @@
 </body>
 </html>
 <script>
-	/*载入框架*/
-	(function(global, undefined) {
+	/* 载入框架 */
+	/*
+	TODO::
+	comboUrl的配置
+	数据的sessionStorage缓存的处理
+	fastClick的嵌入
+	UICompenent嵌入
+	数据视图绑定（大工程）
+**/
+(function(global, undefined) {
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
@@ -514,7 +522,7 @@
 		return ext;
 	}
 })(this);;
-	/*module.ext.*系列一定要放到module.js之*/
+	/* module.ext.*系列一定要放到module.js之后 */
 	(function(){
 	function clean(prefixKey){
 		try {
@@ -602,6 +610,7 @@
 		return res;
 	});
 })();
+	/* bk系列的一定要放到module系列之后 */
 	define('$util', function() {
 	var util = {};
 	util.clone = function(obj){
@@ -1271,7 +1280,6 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			return params;
 		});
 	//将收集到的util绑定到brick开放给外部
-
 	return new Router;
 });;
 	define('$http',['$config'], function(require) {
@@ -1346,7 +1354,7 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		}
 	}
 });;
-	/*这个文件一定要放最后,因为涉及到 module.use 的使用*/
+	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	define('$brick',['$router','$config','$util'],function(require,exports,module){
 	'use strict';
 	var BK;
@@ -1370,9 +1378,10 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			filterConfig(options,appConfig);
 			originModule.config(options);
 		}
+		//将收集的API绑定给BK
+		utilMod.bindTo(BK);
 		//开启整个项目
 		routerMod.start(appConfig);
-		utilMod.bindTo(BK);
 	};
 	BK.paths = function(paths){
 		this.config({
@@ -1385,8 +1394,19 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		});
 	};
 	BK._event = {};
-	BK.globalEvent = function(type,fn){
+	//globalEvent是为了兼容旧代码的调用
+	BK.bind = BK.globalEvent = function(type,fn){
 		(BK._event[type] || (BK._event[type] = [])).push(fn);
+	};
+	BK.unbind = function(type,fn){
+		if(fn){
+			var events = BK._event[type];
+			events && events.forEach(function(item,index,events){
+				item===fn && events.splice(index,1);
+			});
+		}else{
+			BK._event[type] = [];
+		}
 	};
 	BK.trigger = function(type,args){
 		var events = BK._event[type],j;
@@ -1415,7 +1435,7 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 });
 module.use('$brick');;
 	
-	/*基础模块*/
+	/* 其他业务基础模块(非必须) */
 	//     Zepto.js
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
@@ -3248,8 +3268,7 @@ window.$ === undefined && (window.$ = Zepto)
 </script>
 <script>
 	BK.deplist({
-		'index': ['defer',
-			'comp-dataview3','comp-dataview4',
+		'index': ['comp-dataview3','comp-dataview4',
 			'comp-dataview','comp-dataview2',
 		],
 		'comp-dataview': ['comp-datahead','comp-datalist'],
@@ -3258,7 +3277,6 @@ window.$ === undefined && (window.$ = Zepto)
 		'comp-dataview4': ['comp-datahead2','comp-datalist2'],
 	});
 	BK.paths({
-		'defer': './modules/defer.js',
 		'index': './pages/index/js/index.js',
 		'comp-dataview': './components/comp-dataview.js',
 		'comp-dataview2': './components/comp-dataview2.js',
@@ -3275,17 +3293,14 @@ BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	cache: true,
-	hash: '10.7.3'
+	cache: false,
+	hash: '3.0.0'
 });
-
-BK.globalEvent('afterRun',function(){
+BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );
 });
-
-BK.globalEvent('loadFail', function(pageId){
+BK.bind('loadFail', function(pageId){
 	console.error(pageId+' is load fail');
 });
-
 BK.start();
 </script>

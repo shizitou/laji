@@ -12,6 +12,14 @@
                 "$template"
             ]
         },
+        "brick/bk.ext.fastclick.js": {
+            "uri": "/brick/bk.ext.fastclick.js",
+            "type": "js"
+        },
+        "brick/bk.ext.httpcache.js": {
+            "uri": "/brick/bk.ext.httpcache.js",
+            "type": "js"
+        },
         "brick/bk.http.js": {
             "uri": "/brick/bk.http.js",
             "type": "js",
