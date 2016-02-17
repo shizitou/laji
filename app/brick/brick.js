@@ -76,8 +76,3 @@ define('$brick',['$router','$config','$util'],function(require,exports,module){
 	}
 });
 module.use('$brick');
-
-var interval1 = setInterval(function(){},1000000000);
-var interval2 = setInterval(function(){},1000000000);
-var interval3 = setInterval(function(){},1000000000);
-clearInterval(interval2);

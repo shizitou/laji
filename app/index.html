@@ -65,14 +65,11 @@ BK.config({
 	cache: true,
 	hash: '10.7.3'
 });
-
-BK.globalEvent('afterRun',function(){
+BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );
 });
-
-BK.globalEvent('loadFail', function(pageId){
+BK.bind('loadFail', function(pageId){
 	console.error(pageId+' is load fail');
 });
-
 BK.start();
 </script>
