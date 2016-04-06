@@ -1,6 +1,5 @@
 /*
 	TODO::
-	comboUrl的配置
 	数据的sessionStorage缓存的处理
 	fastClick的嵌入
 	UICompenent嵌入
@@ -15,13 +14,17 @@
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
-			comboUrl: null, // function (ids) { return url; }
-			combo: false, //是否启用combo
+			combo: null, // 配置函数来启用combo
 			baseUrl: "", // 后面用来拼接path作为完整请求地址
-			maxUrlLength: 2000 // 拼接combo地址时,请求url的最大长度
 		}
 	};
-	//关键节点config defined filterMids
+	/**
+	config: 在config之后触发(可以用来对配置信息进行一些处理) 
+	defined: 在defined之后触发(可以用来对处理好id,deps,fn进行缓存) 
+	fetchModuleFilter: 过滤掉不需要加载(已缓存的)的模块,当返回true时则请求该模块
+	genUrl: 在进行模块请求时触发,当返回url时,则不触发后续的路由处理(包括combo) 
+		特别声明: 虽然设置该节点后,combo不会触发,但是必须设置combo,才会接受多id的数组
+	**/
 	var mounts = {
 		list: {},
 		add: function(node,fn){
@@ -38,15 +41,11 @@
 				handle.fire = false;
 				return res;
 			}
+			return undefined;
 		}
 	};
-	//这是给brick的框架使用的
-	var appConfig = {};
 	var deplistChange = false;
 	var coreConfig = modCore.configs;
-	var DOMCACHE = 'brick'+new Date().getTime();
-	var localStorage = global.localStorage;
-	var hashKey = '_BRICK_HASH';
 	// 获取模块在配置中对应的别名
 	function parsePaths(id) {
 		var paths = coreConfig.paths;
@@ -103,31 +102,15 @@
 		var doc = document;
 		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 		var baseElement = head.getElementsByTagName("base")[0];
-		function filter(arr,filters){
-			for(var i=arr.length;i>=0;i--){
-				if(filters.length){
-					for(var j=filters.length;j>=0;j--){
-						if(filters[j]===arr[i]){
-							arr.splice(i,1);
-							filters.splice(j,1);
-						}
-					}
-				}else{
-					break;
-				}
-			}
-			return arr;
-		}
 		return function(ids,loaded) {
-			//过滤这些id不触发加载逻辑
-			var filterIds = mounts.dispatch('filterMids',[ids]);
-			ids = filter(ids, filterIds || []);
 			if(!ids.length){
 				setTimeout(loaded,4);
 				return ;
 			}
-			console.log('loadModules: ',ids);
-			var queryUrl = Module.genUrl(ids);
+			var queryUrl = mounts.dispatch('genUrl',[ids]);
+			if(type(queryUrl)!=='string'){
+				queryUrl = Module.genUrl(ids);
+			}
 			var node = doc.createElement("script");
 			var tid = setTimeout(function(){
 				clearTimeout(tid);
@@ -328,36 +311,31 @@
 	//加载模块
 	Module.fetch = function(loadModules) {
 		var config = coreConfig,
+			waitingLoad = [],
 			comboModels;
+		//过滤掉不需要加载(缓存||已经加载完毕)的模块
+		each(loadModules, function(mod,i) {
+			//此控件返回true的时候,不加载次模块
+			mounts.dispatch('fetchModuleFilter',[mod.id]) ?
+				mod.load() :
+				waitingLoad.push(mod);
+		});
+		if(!waitingLoad.length)
+			return ;
 		//合并加载
 		if (config.combo) {
 			comboModels = {
 				'js': [],
 				'css': []
 			};
-			each(loadModules, function(mod) {
-				comboModels[mod.fileType].push(mod);
+			each(waitingLoad, function(mod) {
+				comboModels[mod.fileType].push(mod.id);
 			});
-			each(['css', 'js'], function(type) {
-                var urlLength = 0,
-                    ids = [];
-                each(comboModels[type], function(res, i) {
-                	var idLength = res.id.length;
-                    if (urlLength + idLength < config.maxUrlLength) {
-                        urlLength += idLength;
-                        ids.push(res.id);
-                    } else {
-                        urlLength = idLength;
-                        ids = [res.id];
-                    }
-                    if (i === comboModels[type].length - 1) {
-                        fetch(ids);
-                    }
-                });
-            });
+			fetch(comboModels['js']);
+			fetch(comboModels['css']);
 		//一般加载
 		} else {
-			each(loadModules,function(mod){
+			each(waitingLoad,function(mod){
 				fetch([mod.id]);
 			});
 		}
@@ -369,24 +347,24 @@
 			});
 		}
 	};
-	Module.genUrl = function(ids){
-        var ids = [].concat(ids),
-        	config = coreConfig,
-            url = config.combo && config.comboUrl || config.baseUrl;
-       	each(ids,function(id,i){
-       		id = parsePaths(id);
-       		if( fileType(id) !== 'js' ){
-       			id = id + '.js';
+	Module.genUrl = function (ids) {
+		var comboFun = coreConfig.combo;
+		var config = coreConfig;
+		var queryUrl;
+		if(comboFun && typeof comboFun==='function'){
+			queryUrl = comboFun.apply(config,[ids]);
+		}else{
+			queryUrl = config.baseUrl || '';
+			ids = parsePaths(ids[0]);
+       		if( fileType(ids) !== 'js' ){
+       			ids = ids + '.js';
        		}
-       		ids[i] = id;
-       	});
-       	url = type(url) === 'function' ? 
-       		url(ids) :
-       		~url.indexOf('%s') ? 
-       			url.replace('%s', ids.join(',')) : 
-       			url+ids.join(',') ;
-       	//防止浏览器缓存，请求时带上hash
-        return url + (~url.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+       		queryUrl = ~queryUrl.indexOf('%s') ?
+       			queryUrl.replace('%s', ids) :
+       			queryUrl+ids;
+       		queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+		}
+		return queryUrl;
 	}
 	/******* 对外接口 *******/
 	//配置

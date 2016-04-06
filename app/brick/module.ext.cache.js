@@ -1,4 +1,4 @@
-(function(){
+(function(define){
 	function clean(prefixKey){
 		try {
 			for(var n in localStorage){
@@ -9,7 +9,6 @@
 					localStorage.removeItem(n);
 				}
 			}
-			localStorage.removeItem(hashKey);
 		} catch (e) {}
 	}
 	define.mount('config',function(){
@@ -53,24 +52,19 @@
 				self.config({ cache: false });
 			}
 		}
-	}).mount('filterMids',function(ids){
-		var self = this;
-		var configs = self.configs;
-		if (!configs.cache) {
+	}).mount('fetchModuleFilter',function(id){
+		var configs = this.configs;
+		if (!configs.cache)
 			return;
-		}
-		var res = [];
-		ids.forEach(function(id){
-			var raw, node, deps, factory,
-				doc = document;
-	        raw = localStorage.getItem(configs.prefix + id);
-	        if(raw){
-	        	raw = raw.split('@@');
-	        	factory = raw[1];
-	        	//如果存储出现异常情况导致没有获取到内容,则这里不考虑
-	        	if(!factory)
-	        		return ;
-	        	deps = raw[0];
+		var raw, node, deps, factory,
+			doc = document;
+        raw = localStorage.getItem(configs.prefix + id);
+        if(raw){
+        	raw = raw.split('@@');
+        	factory = raw[1];
+        	//如果存储出现异常情况导致没有获取到内容,则这里不考虑
+        	if(factory){
+        		deps = raw[0];
 	        	deps = deps==="" ? false : deps.split(',') ;
 	        	deps = deps ? '["'+deps.join('","')+'"]' : '[]' ;
 	        	node = doc.createElement('script');
@@ -79,9 +73,8 @@
 	            setTimeout(function(){
 	            	doc.head.removeChild(node);
 	            },4);
-	            res.push(id);
-	        }
-		});
-		return res;
+	            return true;
+        	}
+        }
 	});
-})()
+})(define)

@@ -64,6 +64,10 @@
             "uri": "/brick/module.ext.cache.js",
             "type": "js"
         },
+        "brick/module.ext.upbychar.js": {
+            "uri": "/brick/module.ext.upbychar.js",
+            "type": "js"
+        },
         "brick/module.js": {
             "uri": "/brick/module.js",
             "type": "js"

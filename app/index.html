@@ -19,7 +19,7 @@
 	/* 载入框架 */
 	__inline('./brick/module.js');
 	/* module.ext.*系列一定要放到module.js之后 */
-	__inline('./brick/module.ext.cache.js');
+	__inline('./brick/module.ext.upbychar.js');
 	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
 	__inline('./brick/bk.config.js');
@@ -61,8 +61,12 @@ BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	cache: false,
-	hash: '3.0.0'
+	cache: true,
+	hash: '3.0.2',
+	combo: function (mods) {
+		var baseUrl = 'http://www.baidu.com/js/combo.js??';
+		return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
+	},
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

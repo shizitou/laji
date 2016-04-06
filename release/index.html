@@ -19,7 +19,6 @@
 	/* 载入框架 */
 	/*
 	TODO::
-	comboUrl的配置
 	数据的sessionStorage缓存的处理
 	fastClick的嵌入
 	UICompenent嵌入
@@ -34,13 +33,17 @@
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
-			comboUrl: null, // function (ids) { return url; }
-			combo: false, //是否启用combo
+			combo: null, // 配置函数来启用combo
 			baseUrl: "", // 后面用来拼接path作为完整请求地址
-			maxUrlLength: 2000 // 拼接combo地址时,请求url的最大长度
 		}
 	};
-	//关键节点config defined filterMids
+	/**
+	config: 在config之后触发(可以用来对配置信息进行一些处理) 
+	defined: 在defined之后触发(可以用来对处理好id,deps,fn进行缓存) 
+	fetchModuleFilter: 过滤掉不需要加载(已缓存的)的模块,当返回true时则请求该模块
+	genUrl: 在进行模块请求时触发,当返回url时,则不触发后续的路由处理(包括combo) 
+		特别声明: 虽然设置该节点后,combo不会触发,但是必须设置combo,才会接受多id的数组
+	**/
 	var mounts = {
 		list: {},
 		add: function(node,fn){
@@ -57,15 +60,11 @@
 				handle.fire = false;
 				return res;
 			}
+			return undefined;
 		}
 	};
-	//这是给brick的框架使用的
-	var appConfig = {};
 	var deplistChange = false;
 	var coreConfig = modCore.configs;
-	var DOMCACHE = 'brick'+new Date().getTime();
-	var localStorage = global.localStorage;
-	var hashKey = '_BRICK_HASH';
 	// 获取模块在配置中对应的别名
 	function parsePaths(id) {
 		var paths = coreConfig.paths;
@@ -122,31 +121,15 @@
 		var doc = document;
 		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 		var baseElement = head.getElementsByTagName("base")[0];
-		function filter(arr,filters){
-			for(var i=arr.length;i>=0;i--){
-				if(filters.length){
-					for(var j=filters.length;j>=0;j--){
-						if(filters[j]===arr[i]){
-							arr.splice(i,1);
-							filters.splice(j,1);
-						}
-					}
-				}else{
-					break;
-				}
-			}
-			return arr;
-		}
 		return function(ids,loaded) {
-			//过滤这些id不触发加载逻辑
-			var filterIds = mounts.dispatch('filterMids',[ids]);
-			ids = filter(ids, filterIds || []);
 			if(!ids.length){
 				setTimeout(loaded,4);
 				return ;
 			}
-			console.log('loadModules: ',ids);
-			var queryUrl = Module.genUrl(ids);
+			var queryUrl = mounts.dispatch('genUrl',[ids]);
+			if(type(queryUrl)!=='string'){
+				queryUrl = Module.genUrl(ids);
+			}
 			var node = doc.createElement("script");
 			var tid = setTimeout(function(){
 				clearTimeout(tid);
@@ -347,36 +330,31 @@
 	//加载模块
 	Module.fetch = function(loadModules) {
 		var config = coreConfig,
+			waitingLoad = [],
 			comboModels;
+		//过滤掉不需要加载(缓存||已经加载完毕)的模块
+		each(loadModules, function(mod,i) {
+			//此控件返回true的时候,不加载次模块
+			mounts.dispatch('fetchModuleFilter',[mod.id]) ?
+				mod.load() :
+				waitingLoad.push(mod);
+		});
+		if(!waitingLoad.length)
+			return ;
 		//合并加载
 		if (config.combo) {
 			comboModels = {
 				'js': [],
 				'css': []
 			};
-			each(loadModules, function(mod) {
-				comboModels[mod.fileType].push(mod);
+			each(waitingLoad, function(mod) {
+				comboModels[mod.fileType].push(mod.id);
 			});
-			each(['css', 'js'], function(type) {
-                var urlLength = 0,
-                    ids = [];
-                each(comboModels[type], function(res, i) {
-                	var idLength = res.id.length;
-                    if (urlLength + idLength < config.maxUrlLength) {
-                        urlLength += idLength;
-                        ids.push(res.id);
-                    } else {
-                        urlLength = idLength;
-                        ids = [res.id];
-                    }
-                    if (i === comboModels[type].length - 1) {
-                        fetch(ids);
-                    }
-                });
-            });
+			fetch(comboModels['js']);
+			fetch(comboModels['css']);
 		//一般加载
 		} else {
-			each(loadModules,function(mod){
+			each(waitingLoad,function(mod){
 				fetch([mod.id]);
 			});
 		}
@@ -388,24 +366,24 @@
 			});
 		}
 	};
-	Module.genUrl = function(ids){
-        var ids = [].concat(ids),
-        	config = coreConfig,
-            url = config.combo && config.comboUrl || config.baseUrl;
-       	each(ids,function(id,i){
-       		id = parsePaths(id);
-       		if( fileType(id) !== 'js' ){
-       			id = id + '.js';
+	Module.genUrl = function (ids) {
+		var comboFun = coreConfig.combo;
+		var config = coreConfig;
+		var queryUrl;
+		if(comboFun && typeof comboFun==='function'){
+			queryUrl = comboFun.apply(config,[ids]);
+		}else{
+			queryUrl = config.baseUrl || '';
+			ids = parsePaths(ids[0]);
+       		if( fileType(ids) !== 'js' ){
+       			ids = ids + '.js';
        		}
-       		ids[i] = id;
-       	});
-       	url = type(url) === 'function' ? 
-       		url(ids) :
-       		~url.indexOf('%s') ? 
-       			url.replace('%s', ids.join(',')) : 
-       			url+ids.join(',') ;
-       	//防止浏览器缓存，请求时带上hash
-        return url + (~url.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+       		queryUrl = ~queryUrl.indexOf('%s') ?
+       			queryUrl.replace('%s', ids) :
+       			queryUrl+ids;
+       		queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+		}
+		return queryUrl;
 	}
 	/******* 对外接口 *******/
 	//配置
@@ -523,7 +501,10 @@
 	}
 })(this);;
 	/* module.ext.*系列一定要放到module.js之后 */
-	(function(){
+	;(function(){
+	var originDefine = window.define;
+	var modulesVersion;
+	var modulesConfigs = {};
 	function clean(prefixKey){
 		try {
 			for(var n in localStorage){
@@ -534,25 +515,22 @@
 					localStorage.removeItem(n);
 				}
 			}
-			localStorage.removeItem(hashKey);
 		} catch (e) {}
 	}
-	define.mount('config',function(){
+	originDefine.mount('config',function(){
 		var self = this;
 		var configs = self.configs;
 		if(!configs.cache){
 			return ;
 		}
 		self.config({ 'prefix': configs.prefix || '__BRICK__' });
-		var hashKey = configs.prefix+'HASH';
-		// detect localStorage support and activate cache ability
-
+		//实验是否支持localStorage
+		var storageKey = configs.prefix+(~~(Math.random()*10000));
 		try {
-			if (configs.hash !== localStorage.getItem(hashKey)) {
-				clean(configs.prefix);
-				localStorage.setItem(hashKey, configs.hash);
+			localStorage.setItem(storageKey, '1');
+			if(localStorage.getItem(storageKey)){
+				localStorage.removeItem(storageKey);
 			}
-			self.config({ 'cache': true });
 		} catch (e) {
 			self.config({ 'cache': false });
 		}
@@ -563,53 +541,97 @@
 				self.config({ 'cache': false });
 			}
 		}
-		define.unmount('config');
-	}).mount('defined',function(id,deps,factory){
-		var self = this;
-		var configs = self.configs;
-		if (!configs.cache) {
-			return;
+		modulesConfigs = configs;
+		if(configs.cache){
+			modulesVersion = JSON.parse(localStorage.getItem(configs.prefix + "moduleVersion")) || {}
 		}
-		//缓存到本地
-		if (id.charAt(0) !== '$') {
-			try {
-				localStorage.setItem(configs.prefix + id, deps.join(',') + '@@' + factory.toString());
-			} catch (e) {
-				self.config({ cache: false });
+		originDefine.unmount('config');
+	}).mount('fetchModuleFilter',function(id){
+		var configs = this.configs;
+		if (!configs.cache)
+			return;
+        var node, factory, doc = document;
+        factory = localStorage.getItem(configs.prefix + id);
+        if(factory && configs.hash == modulesVersion[id]){
+        	//如果存储出现异常情况导致没有获取到内容,则这里不考虑
+        	if(!factory || factory.substring(0,3)!=='fun'){
+        		return ;
+        	}
+        	node = doc.createElement('script');
+        	node.appendChild(doc.createTextNode('define("'+id+'",[],'+factory+');'));
+            doc.body.appendChild(node);
+            setTimeout(function(){
+            	doc.body.removeChild(node);
+            },4);
+            return true;
+        }
+	})
+	.mount('genUrl',function(ids){
+		var configs = this.configs;
+		if(configs.combo){
+			return null;
+		}
+		//返回单个模块的请求地址 即可 
+		var queryUrl = configs.baseUrl || '';
+		var paths = configs.paths;
+		var ids = ids[0];
+		ids = paths && type(paths[ids])==='string' ? paths[ids] : ids;
+   		queryUrl = ~queryUrl.indexOf('%s') ?
+   			queryUrl.replace('%s', ids) :
+   			queryUrl+ids;
+   		return queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + configs.hash+'&ver=3.0.0';
+	})
+	window.define = function(id, deps, factory){
+		/* 处理参数: factory: function/string/array 差量
+		 * 函数体: define("methodName", function(require, exports, module){ //code });
+		 * 字符串: define("methodName", "function(require, exports, module){ //code }");
+		 * 数    组: define("methodName", [[0,2],".0.6/main-de",[3,8],"e 1.0.6\");\n    var"]);
+		 */
+		var argsLen = arguments.length;
+		if (argsLen === 1) {
+			factory = id;
+			id = undefined;
+		} else if (argsLen === 2) {
+			factory = deps;
+			if (type(id)=== 'array') {
+				deps = id;
+				id = undefined;
+			} else {
+				deps = [];
 			}
 		}
-	}).mount('filterMids',function(ids){
-		var self = this;
-		var configs = self.configs;
-		if (!configs.cache) {
-			return;
+		// id deps factory{string,array,function}	
+		if(type(factory) === "array"){
+			//差量
+			factory = getJsCode(id,deps,factory);
+		}else if(type(factory)==='function'){
+			factory = factory.toString();
 		}
-		var res = [];
-		ids.forEach(function(id){
-			var raw, node, deps, factory,
-				doc = document;
-	        raw = localStorage.getItem(configs.prefix + id);
-	        if(raw){
-	        	raw = raw.split('@@');
-	        	factory = raw[1];
-	        	//如果存储出现异常情况导致没有获取到内容,则这里不考虑
-	        	if(!factory)
-	        		return ;
-	        	deps = raw[0];
-	        	deps = deps==="" ? false : deps.split(',') ;
-	        	deps = deps ? '["'+deps.join('","')+'"]' : '[]' ;
-	        	node = doc.createElement('script');
-	            node.appendChild(doc.createTextNode('define("'+id+'",'+deps+','+factory+');'));
-	            doc.head.appendChild(node);
-	            setTimeout(function(){
-	            	doc.head.removeChild(node);
-	            },4);
-	            res.push(id);
-	        }
-		});
-		return res;
-	});
-})();
+		//最终处理到这里时，factory是一个可执行的最新的字符串，可进行存储
+		if (modulesConfigs.cache && id.charAt(0) !== '$') {
+			var prefix = modulesConfigs.prefix;
+			try{
+				localStorage.setItem(prefix + id, factory);
+			}catch(e){
+				clean(prefix);
+			}
+			if(modulesConfigs.hash !== modulesVersion[id]){
+				try {
+					//存储当前模块的版本号到localstorage
+					modulesVersion[id] = modulesConfigs.hash;
+					localStorage.setItem(prefix + "moduleVersion", JSON.stringify(modulesVersion));
+				} catch (e) { 
+					clean(prefix); 
+				}
+			}
+		}
+		new Function('f','f("'+id+'",[],'+factory+');')(originDefine);
+	};
+	function type(obj) {
+		var varType = Object.prototype.toString.call(obj).toLowerCase();
+		return varType.substring(8, varType.length - 1);
+	}
+})();;
 	/* bk系列的一定要放到module系列之后 */
 	define('$util', function() {
 	var util = {};
@@ -3293,8 +3315,12 @@ BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	cache: false,
-	hash: '3.0.0'
+	cache: true,
+	hash: '3.0.2',
+	combo: function (mods) {
+		var baseUrl = 'http://www.baidu.com/js/combo.js??';
+		return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
+	},
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );
