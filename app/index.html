@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="index.css" />
 </head>
 <body>
-<div id="footer">
+<div id="footer"> 
 	webSite footerView<br />
 	create by brick at 2015.3.26
 </div>
@@ -27,7 +27,6 @@
 	__inline('./brick/bk.controller.js');
 	__inline('./brick/bk.router.js');
 	__inline('./brick/bk.http.js');
-	__inline('./brick/bk.localstorage.js');
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	__inline('./brick/brick.js');
 	
@@ -61,12 +60,12 @@ BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	cache: true,
+	// cache: true,
 	hash: '3.0.2',
-	combo: function (mods) {
-		var baseUrl = 'http://www.baidu.com/js/combo.js??';
-		return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
-	},
+	// combo: function (mods) {
+	// 	var baseUrl = 'http://www.baidu.com/js/combo.js??';
+	// 	return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
+	// },
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

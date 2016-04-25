@@ -55,8 +55,9 @@
             "uri": "/brick/brick.js",
             "type": "js",
             "deps": [
-                "$router",
                 "$util",
+                "$router",
+                "$controller",
                 "$config"
             ]
         },

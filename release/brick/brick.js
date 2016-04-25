@@ -1,4 +1,4 @@
-define('$brick',['$router','$config','$util'],function(require,exports,module){
+define('$brick',['$router','$config','$util','$controller'],function(require,exports,module){
 	'use strict';
 	var BK;
 	var originModule = window.module;
@@ -6,25 +6,38 @@ define('$brick',['$router','$config','$util'],function(require,exports,module){
 	var f = function(){};
 	f.prototype = originModule;
 	BK = window.BK = new f();
-	
-	var routerMod = require('$router');
+
 	var utilMod = require('$util');
-	var appConfig = {};
+	var routerMod = require('$router');
+	var controlMod = require('$controller');
 	BK.config = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
-		filterConfig(options,appConfig);
+		filterConfig(options);
 		originModule.config(options);
 	}
 	BK.start = function(options){
-		//留下业务中需要的配置项,其他的交给模块加载器处理
-		if(options){
-			filterConfig(options,appConfig);
-			originModule.config(options);
-		}
+		options && this.config(options);
 		//将收集的API绑定给BK
 		utilMod.bindTo(BK);
-		//开启整个项目
-		routerMod.start(appConfig);
+		if(routerMod){
+			routerMod.start();
+		}else{
+			controlMod.init();
+			BK.trigger('afterRun');
+			var hashParam = BK.parseHash();
+			var controller;
+			if(hashParam['ct'] && hashParam['ac']){
+				controller = hashParam['ct']+hashParam['ac'];
+				hashParam['__page'] = controller;
+				delete hashParam['ct'],delete hashParam['ac'];
+			}else if(appConfigs.defController){
+				controller = appConfigs.defController;
+			}
+			if(!controller){
+				throw new Error('页面不存在');
+			}
+			controlMod.firePageControl(controller,hashParam,{});
+		}
 	};
 	BK.paths = function(paths){
 		this.config({
@@ -57,20 +70,18 @@ define('$brick',['$router','$config','$util'],function(require,exports,module){
 		if(events){
 			if(j = events.length){
 				for(var i=0;i<j;i++){
-					events[i] = function(fn){
-						fn.apply(window,args);
-					};
+					events[i].apply(window,args);
 				}
 			}
 		}
 	}
 	var appConfigs = require('$config');
-	function filterConfig(from,to){
+	function filterConfig(from){
 		var item;
 		for(var n in appConfigs){
 			item = from[n];
 			if(typeof item!=='undefined'){
-				to[n] = item;
+				appConfigs[n] = item;
 				delete from[n];
 			}
 		}

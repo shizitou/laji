@@ -8,6 +8,7 @@ define('index', function(require) {
 		pageView: __inline('../html/index.html'),
 		init: function(params) {},
 		enter: function(params) {
+			console.log(params);
 			var data = {
 				"title": "包质量宠文，不看后悔",
 				"desc": "保质保量，一生一世一双人，宠文，爽文。保质保量，一生一世一双人，宠文，爽文。",
