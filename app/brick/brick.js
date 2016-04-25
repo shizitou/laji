@@ -10,9 +10,17 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 	var utilMod = require('$util');
 	var routerMod = require('$router');
 	var controlMod = require('$controller');
+	var appConfigs = require('$config');
 	BK.config = function(options){
 		//留下业务中需要的配置项,其他的交给模块加载器处理
-		filterConfig(options);
+		var item;
+		for(var n in appConfigs){
+			item = options[n];
+			if(typeof item!=='undefined'){
+				appConfigs[n] = item;
+				delete options[n];
+			}
+		}
 		originModule.config(options);
 	}
 	BK.start = function(options){
@@ -25,16 +33,13 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 			controlMod.init();
 			BK.trigger('afterRun');
 			var hashParam = BK.parseHash();
-			var controller;
+			var controller = '';
 			if(hashParam['ct'] && hashParam['ac']){
 				controller = hashParam['ct']+hashParam['ac'];
-				hashParam['__page'] = controller;
+				// hashParam['__page'] = controller;
 				delete hashParam['ct'],delete hashParam['ac'];
 			}else if(appConfigs.defController){
 				controller = appConfigs.defController;
-			}
-			if(!controller){
-				throw new Error('页面不存在');
 			}
 			controlMod.firePageControl(controller,hashParam,{});
 		}
@@ -75,16 +80,9 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 			}
 		}
 	}
-	var appConfigs = require('$config');
+	
 	function filterConfig(from){
-		var item;
-		for(var n in appConfigs){
-			item = from[n];
-			if(typeof item!=='undefined'){
-				appConfigs[n] = item;
-				delete from[n];
-			}
-		}
+		
 	}
 });
 module.use('$brick');

@@ -4,5 +4,5 @@ var http = require('http'),
 //开启HTTP监听
 http.createServer(function(request,response){
 	// console.dir(request);
-	// new appServer(request,response);
+	new appServer(request,response);
 }).listen(100);
