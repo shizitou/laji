@@ -55,20 +55,16 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		},
 		parseHash: function(hash){
 			//返回 'ct.ac' 和 解析后的parse参数
-			var controller,
+			var controller = '',
 				params = util.parseHash(hash);
 			if(params['ct'] && params['ac']){
 				controller = params['ct']+params['ac'];
-				params['__page'] = controller;
+				// params['__page'] = controller;
 				delete params['ct'],delete params['ac'];
 			}else if(this.defControl){
 				controller = this.defControl;
 			}
-			if(controller){
-				return [controller,params];
-			}else{
-				throw new Error('页面不存在');
-			}
+			return [controller,params];
 		}
 	};
 	Router.prototype = proto;
