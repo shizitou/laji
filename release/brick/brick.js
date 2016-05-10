@@ -36,7 +36,6 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 			var controller = '';
 			if(hashParam['ct'] && hashParam['ac']){
 				controller = hashParam['ct']+hashParam['ac'];
-				// hashParam['__page'] = controller;
 				delete hashParam['ct'],delete hashParam['ac'];
 			}else if(appConfigs.defController){
 				controller = appConfigs.defController;
@@ -80,9 +79,6 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 			}
 		}
 	}
-	
-	function filterConfig(from){
-		
-	}
+
 });
 module.use('$brick');

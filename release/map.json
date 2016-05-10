@@ -20,6 +20,15 @@
             "uri": "/brick/bk.ext.httpcache.js",
             "type": "js"
         },
+        "brick/bk.ext.router.js": {
+            "uri": "/brick/bk.ext.router.js",
+            "type": "js",
+            "deps": [
+                "$config",
+                "$controller",
+                "$util"
+            ]
+        },
         "brick/bk.http.js": {
             "uri": "/brick/bk.http.js",
             "type": "js",
@@ -30,15 +39,6 @@
         "brick/bk.localstorage.js": {
             "uri": "/brick/bk.localstorage.js",
             "type": "js"
-        },
-        "brick/bk.router.js": {
-            "uri": "/brick/bk.router.js",
-            "type": "js",
-            "deps": [
-                "$config",
-                "$controller",
-                "$util"
-            ]
         },
         "brick/bk.template.js": {
             "uri": "/brick/bk.template.js",
@@ -221,10 +221,6 @@
             "uri": "/modules/zepto/zepto.inline.js",
             "type": "js"
         },
-        "pages/index/css/index.css": {
-            "uri": "/pages/index/css/index.css",
-            "type": "css"
-        },
         "pages/index/js/diffdom.js": {
             "uri": "/pages/index/js/diffdom.js",
             "type": "js",
@@ -288,8 +284,21 @@
                 "comp-dataview",
                 "comp-dataview2",
                 "comp-dataview3",
-                "comp-dataview4"
+                "comp-dataview4",
+                "index.css"
             ]
+        },
+        "pages/index/js/test.mod.js": {
+            "uri": "/pages/index/js/test.mod.js",
+            "type": "js"
+        },
+        "underscore.js": {
+            "uri": "/underscore.js",
+            "type": "js"
+        },
+        "pages/index/css/index.css": {
+            "uri": "/pages/index/css/index.css",
+            "type": "css"
         }
     },
     "pkg": {}

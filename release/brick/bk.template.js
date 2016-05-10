@@ -8,9 +8,10 @@ define('$Compenent',['$template'],function (require,exports,module) {
     var style = document.createElement('style');
     var tableRow = document.createElement('tr');
     var containers = {
-      'tr': document.createElement('tbody'),
-      'td': tableRow, 'th': tableRow,
-      '*': document.createElement('div')
+        'tr': document.createElement('tbody'),
+        'td': tableRow,
+        'th': tableRow,
+        '*': document.createElement('div')
     };
     document.head.appendChild(style);
     function addStyle(css,prefixClass){
@@ -151,7 +152,7 @@ define('$template',[],function(require){
         render = new Function('obj', '_escape' , source);
         //当没有传入data时 返回的方法: 颗粒模式
         if(data===undefined)
-            return function( d ){
+            return function( d , context ){
                 data = d;
                 return render.call(compenent,d, _escape );
             };

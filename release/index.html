@@ -19,6 +19,7 @@
 	/* 载入框架 */
 	/*
 	TODO::
+	router对ct,ac的宽大处理
 	数据的sessionStorage缓存的处理
 	fastClick的嵌入
 	UICompenent嵌入
@@ -28,7 +29,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.0.0',
+		version: '3.2.0',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -646,6 +647,7 @@
 			el.style.display = 'block';
 			el.innerText = text;
             //计算在页面中显示的位置
+            //BUG:: 多次调用时，会重复监听
             window.addEventListener('resize', function(){
             	self.setPos();
             }, false);
@@ -653,7 +655,7 @@
             //设置消失时间
 			self._timeCon = setTimeout(function(){
 				abort();
-			},(time || time===0 || 1)*1000);
+			},(time || 1)*1000);
 			return abort;
 		}else{
 			throw new Error('未指定弹出框元素');
@@ -675,7 +677,7 @@
 	};
 	util.alert = _alert;
 	//获取页面hash字符串
-	util.getFragment = function() {
+	util.getFragment=function(hash) {
 		// IE6直接用location.hash取hash，可能会取少一部分内容
 		// 比如 http://www.cnblogs.com/rubylouvre#stream/xxxxx?lang=zh_c
 		// ie6 => location.hash = #stream/xxxxx
@@ -685,7 +687,12 @@
 		// firefox 15 => #!/home/q={"thedate":"20121010~20121010"}
 		// 其他浏览器 => #!/home/q={%22thedate%22:%2220121010~20121010%22}
 		var path = (window || this).location.href;
-		~path.indexOf("#") || (path = path + '#');
+		if(hash){
+			path = hash.charAt(0)==='#'? hash : '#'+hash;
+		}else{
+			path = (window || this).location.href;
+			~path.indexOf("#") || (path = path + '#');
+		}
 		path = path.slice(path.indexOf("#") + 1);
 		if (path.indexOf("/") === 0)
 			return path.slice(1)
@@ -695,7 +702,7 @@
 	};
 	//解析hash字符串成对象
 	util.parseHash = function(hash){
-		hash || (hash=this.getFragment());
+		hash = this.getFragment(hash);
 		//返回 'ct.ac' 和 解析后的parse参数
 		var paramArr = hash.split('/'),
 			params = {},
@@ -736,6 +743,10 @@
 			params[option.split('=')[0]] = de(option.substr(option.indexOf('=')+1));
 		}
 		return params;
+	}
+	//command: 'push' || 'place'
+	util.history = function (command, page, params) {
+		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
 	return {
 		collection: util,
@@ -783,7 +794,6 @@
 		rootView: null,
 		//页面间跳转显示的loading图: DOM元素
 		loading: null,
-		footerView: null,
 		//是否延迟显示
 		loadingDelay: 0,
 		//ajax默认时间
@@ -803,9 +813,10 @@ define('$Compenent',['$template'],function (require,exports,module) {
     var style = document.createElement('style');
     var tableRow = document.createElement('tr');
     var containers = {
-      'tr': document.createElement('tbody'),
-      'td': tableRow, 'th': tableRow,
-      '*': document.createElement('div')
+        'tr': document.createElement('tbody'),
+        'td': tableRow,
+        'th': tableRow,
+        '*': document.createElement('div')
     };
     document.head.appendChild(style);
     function addStyle(css,prefixClass){
@@ -946,7 +957,7 @@ define('$template',[],function(require){
         render = new Function('obj', '_escape' , source);
         //当没有传入data时 返回的方法: 颗粒模式
         if(data===undefined)
-            return function( d ){
+            return function( d , context ){
                 data = d;
                 return render.call(compenent,d, _escape );
             };
@@ -1213,6 +1224,7 @@ define('$controller',['$config','$template'],function(require,exports){
     };
 	return controlMod;
 });;
+	/* __inline('./brick/bk.ext.router.js'); */
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	define('$brick',['$router','$config','$util','$controller'],function(require,exports,module){
 	'use strict';
@@ -1252,7 +1264,6 @@ define('$controller',['$config','$template'],function(require,exports){
 			var controller = '';
 			if(hashParam['ct'] && hashParam['ac']){
 				controller = hashParam['ct']+hashParam['ac'];
-				// hashParam['__page'] = controller;
 				delete hashParam['ct'],delete hashParam['ac'];
 			}else if(appConfigs.defController){
 				controller = appConfigs.defController;
@@ -1296,10 +1307,7 @@ define('$controller',['$config','$template'],function(require,exports){
 			}
 		}
 	}
-	
-	function filterConfig(from){
-		
-	}
+
 });
 module.use('$brick');;
 	
@@ -3137,7 +3145,7 @@ window.$ === undefined && (window.$ = Zepto)
 <script>
 	BK.deplist({
 		'index': ['comp-dataview3','comp-dataview4',
-			'comp-dataview','comp-dataview2',
+			'comp-dataview','comp-dataview2', 'index.css'
 		],
 		'comp-dataview': ['comp-datahead','comp-datalist'],
 		'comp-dataview2': ['comp-datahead2','comp-datalist'],
@@ -3146,6 +3154,7 @@ window.$ === undefined && (window.$ = Zepto)
 	});
 	BK.paths({
 		'index': './pages/index/js/index.js',
+		'index.css': './pages/index/css/index.css',
 		'comp-dataview': './components/comp-dataview.js',
 		'comp-dataview2': './components/comp-dataview2.js',
 		'comp-dataview3': './components/comp-dataview3.js',

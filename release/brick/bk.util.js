@@ -11,6 +11,7 @@ define('$util', function() {
 			el.style.display = 'block';
 			el.innerText = text;
             //计算在页面中显示的位置
+            //BUG:: 多次调用时，会重复监听
             window.addEventListener('resize', function(){
             	self.setPos();
             }, false);
@@ -18,7 +19,7 @@ define('$util', function() {
             //设置消失时间
 			self._timeCon = setTimeout(function(){
 				abort();
-			},(time || time===0 || 1)*1000);
+			},(time || 1)*1000);
 			return abort;
 		}else{
 			throw new Error('未指定弹出框元素');
@@ -40,7 +41,7 @@ define('$util', function() {
 	};
 	util.alert = _alert;
 	//获取页面hash字符串
-	util.getFragment = function() {
+	util.getFragment=function(hash) {
 		// IE6直接用location.hash取hash，可能会取少一部分内容
 		// 比如 http://www.cnblogs.com/rubylouvre#stream/xxxxx?lang=zh_c
 		// ie6 => location.hash = #stream/xxxxx
@@ -50,7 +51,12 @@ define('$util', function() {
 		// firefox 15 => #!/home/q={"thedate":"20121010~20121010"}
 		// 其他浏览器 => #!/home/q={%22thedate%22:%2220121010~20121010%22}
 		var path = (window || this).location.href;
-		~path.indexOf("#") || (path = path + '#');
+		if(hash){
+			path = hash.charAt(0)==='#'? hash : '#'+hash;
+		}else{
+			path = (window || this).location.href;
+			~path.indexOf("#") || (path = path + '#');
+		}
 		path = path.slice(path.indexOf("#") + 1);
 		if (path.indexOf("/") === 0)
 			return path.slice(1)
@@ -60,7 +66,7 @@ define('$util', function() {
 	};
 	//解析hash字符串成对象
 	util.parseHash = function(hash){
-		hash || (hash=this.getFragment());
+		hash = this.getFragment(hash);
 		//返回 'ct.ac' 和 解析后的parse参数
 		var paramArr = hash.split('/'),
 			params = {},
@@ -101,6 +107,10 @@ define('$util', function() {
 			params[option.split('=')[0]] = de(option.substr(option.indexOf('=')+1));
 		}
 		return params;
+	}
+	//command: 'push' || 'place'
+	util.history = function (command, page, params) {
+		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
 	return {
 		collection: util,

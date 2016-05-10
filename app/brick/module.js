@@ -1,5 +1,6 @@
 /*
 	TODO::
+	router对ct,ac的宽大处理
 	数据的sessionStorage缓存的处理
 	fastClick的嵌入
 	UICompenent嵌入
@@ -9,7 +10,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.0.0',
+		version: '3.2.0',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径

@@ -59,7 +59,6 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 				params = util.parseHash(hash);
 			if(params['ct'] && params['ac']){
 				controller = params['ct']+params['ac'];
-				// params['__page'] = controller;
 				delete params['ct'],delete params['ac'];
 			}else if(this.defControl){
 				controller = this.defControl;
@@ -69,17 +68,10 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 	};
 	Router.prototype = proto;
 
-	utilMod
-		// $.link('ct/ac',{})
-		.set('link', function(page, params) {
-			Router.fromUser = true;
-			window.location.hash = '!/' + this.genPHash(page, params);
-		})
-		// commend: 'replace','push'
-		.set('history', function(commend, page, params) {
-			window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
-		})
-
+	utilMod.set('link', function(page, params) {
+		Router.fromUser = true;
+		window.location.hash = '!/' + this.genPHash(page, params);
+	})
 		
 	//将收集到的util绑定到brick开放给外部
 	return new Router;

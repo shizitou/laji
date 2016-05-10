@@ -7,7 +7,6 @@ define('$config',function(){
 		rootView: null,
 		//页面间跳转显示的loading图: DOM元素
 		loading: null,
-		footerView: null,
 		//是否延迟显示
 		loadingDelay: 0,
 		//ajax默认时间
