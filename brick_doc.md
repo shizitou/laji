@@ -1,6 +1,7 @@
 # brick.js
 ## 框架简介
-本框架适用于移动端项目开发，支持多人模块化开发。
+本框架适用于移动端项目开发。  
+当前版本 3.3
 
 ## 框架文件概述
 * model.js //模块加载器，采用cmd格式
@@ -53,7 +54,7 @@ eg: `<script src="brick.js?__inline"></script>`
 ### 参数配置
 ```
 var config = {
-	defController: '', //默认控制器('ctac')
+	defController: '', //默认控制器('ct')
 	rootView: null, //页面的跟视图区域(DOM元素)
 	loading: null,//页面间跳转时显示的loading元素(DOM元素)
 	loadingDelay: 1, //延迟显示loading元素,
@@ -76,8 +77,7 @@ BK.start(); //开启框架
 #### 部分参数详解：
 <dl>
 	<dt>defController</dt>
-	<dd>当通过hash参数找不到ac,ct时,执行此项配置的模块<br />
-	这里配置的模块id指的是ac,ct两个参数拼接后的字符串</dd>
+	<dd>当通过hash参数找不到ct时,执行此项配置的模块</dd>
 	<dt>rootView</dt>
 	<dd>不设置时，指向body元素</dd>
 	<dt>ajaxTimeout,ajaxDataType,ajaxCache</dt>
@@ -100,7 +100,7 @@ define('modelId',['depId'],function(require,exports,model){
 ```
 #### 代码详解：
 * modelId: 
-  * 当页面的ct,ac拼在一起于此相同时，框架则会调度进入这个模块
+  * 当路由的ct参数与此相同时，框架则会调度进入这个模块
 * exports.pageView: 
   * 是页面html字符串，在框架运行时，会将其插入到视图区
   * [这里手写字符串肯定是很艰难的，建议采用工程化的文件引入功能]
@@ -144,17 +144,14 @@ define('modelId',['depId'],function(require,exports,model){
   * 将对象转换成"key/val"格式的字符串
 * BK.genPHash(ct [,obj]);
   * 返回待控制参数的路由字符串
-  * ct参数格式为"ct/ac"
 * BK.parseSearch([searchStr]);
   * 解析查询字符串成对象
   * 默认是解析当前页面的查询字符串
 * BK.history(command,ct [,params]);
   * 设置地址为指定页面路由，但不刷新当前页面
   * command: 'push', 'replace' //pushState,replaceState
-  * ct参数格式为"ct/ac"
 * BK.link(ct [,params])
   * 跳转到其他页面
-  * ct参数格式为"ct/ac"
   * [特别声明] 次方法在引入 bk.ext.router.js 后才会有
 
 ### 事件

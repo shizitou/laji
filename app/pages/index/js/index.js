@@ -9,7 +9,6 @@ define('index', function(require) {
 		pageView: __inline('../html/index.html'),
 		init: function(params) {},
 		enter: function(params) {
-			console.log(params);
 			var data = {
 				"title": "包质量宠文，不看后悔",
 				"desc": "保质保量，一生一世一双人，宠文，爽文。保质保量，一生一世一双人，宠文，爽文。",
@@ -25,7 +24,12 @@ define('index', function(require) {
 				}],
 				"flag": "new"
 			};
-			var dataStr = template(__inline('../tpl/index.tpl.html'),data); // data2 this
+			var tools = {
+				addPrefix: function(val){
+					return 'BRICK_'+val;
+				}
+			};
+			var dataStr = template(__inline('../tpl/index.tpl.html'),data,tools); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 		},
 		leave: function() {}

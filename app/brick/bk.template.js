@@ -58,7 +58,7 @@ define('$Compenent',['$template'],function (require,exports,module) {
             compStyle: null
         };
         compObj = null;
-        return function(data) {
+        return function(data, context) {
             var compObj = compsList[compId];
             var compResObj = compObj.resource;
             var compStyle = compObj.compStyle;
@@ -68,7 +68,7 @@ define('$Compenent',['$template'],function (require,exports,module) {
                 addStyle(compResObj.css, compStyle);
             }
             return addClassToRenView(
-                compResObj.complie(data), compStyle
+                compResObj.complie(data, context), compStyle
             );
         };
     }
@@ -78,14 +78,9 @@ define('$template',[],function(require){
     这是从underscore源码中提取出来的模板引擎,
     源码中的调用方法是 _.template();
     ****************/
-    return function(text, data) {
-        var compenent = {
-            require: function(compId,renderData){
-                return require(compId)(renderData || data);
-            }
-        };
+    return function(text, data, context) {
         //存放的是组合后的渲染函数
-        var render,
+        var render,result,
             //匹配模板标签
             settings = {
                 evaluate    : /<%([\s\S]+?)%>/g,
@@ -152,11 +147,30 @@ define('$template',[],function(require){
         render = new Function('obj', '_escape' , source);
         //当没有传入data时 返回的方法: 颗粒模式
         if(data===undefined)
-            return function( d , context ){
-                data = d;
-                return render.call(compenent,d, _escape );
+            return renderTemplate;
+        else{
+            return renderTemplate(data, context);
+        }
+        function renderTemplate(data, context){
+            var compenent = {
+                $require: function(compId,compData, compContext){
+                    return require(compId)(compData || data, compContext || context);
+                }
             };
-        else
-            return render.call(compenent,data, _escape );
+            if(context && Object.prototype.toString.call(context) === '[object Object]'){
+                //这里需要复刻新对象出来，如果传递原始的话，则不便处理绑定其上的$require
+                compenent._ = function(){};
+                compenent._.prototype = context;
+                context = new compenent._();
+                context.$require = compenent.$require;
+            }else{
+                context = compenent;
+            } 
+            result = render.call(context,data, _escape );
+            // if(context!=compenent){
+            //     delete context.$require;
+            // }
+            return result;
+        }
     };
 });
