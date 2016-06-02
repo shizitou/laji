@@ -1,11 +1,11 @@
 # brick.js
 ## 框架简介
 本框架适用于移动端项目开发。  
-当前版本 3.3
+当前版本 3.4
 
 ## 框架文件概述
-* model.js //模块加载器，采用cmd格式
-* model.ext.cache.js //缓存模块至本地存储
+* module.js //模块加载器，采用cmd格式
+* module.ext.cache.js //缓存模块至本地存储
 * brick.js //满足实现业务的基本代码
 * bk.config.js //业务的配置信息 
 * bk.router.js //对路由的处理
@@ -17,8 +17,8 @@
 
 ## 框架的使用
 ### 文件引入
-**model.js**	
-model.ext.cache.js	
+**module.js**	
+module.ext.cache.js	
 **bk.config.js**	
 **bk.controller.js**	
 **bk.util.js**	
@@ -33,7 +33,7 @@ bk.localstorage.js
 引入顺序如上图所示
 #### 可选文件介绍:
 <dl>
-	<dt>model.ext.cache.js</dt>
+	<dt>module.ext.cache.js</dt>
 	<dd>引此时，框架会将模块内容缓存至本地存储。</dd>
 	<dt>bk.ext.router.js</dt>
 	<dd>引此时，框架将进行路由监听(SPA模式需要)</dd>
@@ -164,6 +164,7 @@ define('modelId',['depId'],function(require,exports,model){
 * loadFail
   * 此事件在**页面模块**加载失败后(超时或者未找到)触发
   * 模块id会作为参数传递给监听函数
+  * 特别声明：若是页面模块的某个强依赖模块加载失败，则不会执行该事件，而是正常的执行页面模块代码。
 * beforeEnter
   * 在触发页面的enter之前触发  
 * afterLeave
@@ -175,9 +176,9 @@ afterRun > beforeEnter > enter > leave > afterLeave > beforeEnter > enter
 ### 系统模块的用法
 
 * $template
-  * $template(text,data) 模板渲染
+  * $template(text, data, context) 模板渲染
 * $localStorage
-  * $localStorage.set(key,val) 存储
+  * $localStorage.set(key, val) 存储
   * $localStorage.get(key) 获得
   * $localStorage.remove(key) 删除
   * $localStorage.refresh() 清空保存在内存变量中的数据
@@ -185,6 +186,9 @@ afterRun > beforeEnter > enter > leave > afterLeave > beforeEnter > enter
   * $http.ajax({})
   * $http.get({});
   * $http.post({});
+
+特别声明：$template自定义的上下文对象中,给this进行赋值是无效的;  
+eg: `{a:function(){this.b='c'}}` 渲染过后,`{}`上并没有`b`。
 
 ### 页面模块对象内置的方法
 介绍：在页面模块的init,enter,leave方法中,有如下方法可以被调用
