@@ -30,6 +30,10 @@ define('index', function(require) {
 				}
 			};
 			var dataStr = template(__inline('../tpl/index.tpl.html'),data,tools); 
+			var dataStr = template(__inline('../tpl/index.tpl.html')).call(tools,data);
+			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
+			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
+
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 		},
 		leave: function() {}

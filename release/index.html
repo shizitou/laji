@@ -878,56 +878,53 @@ define('$Compenent',['$template'],function (require,exports,module) {
     }
 });
 define('$template',[],function(require){
-	/****************
-    这是从underscore源码中提取出来的模板引擎,
-    源码中的调用方法是 _.template();
-    ****************/
+    //匹配模板标签
+    var settings = {
+            evaluate    : /<%([\s\S]+?)%>/g,
+            interpolate : /<%=([\s\S]+?)%>/g,
+            escape      : /<%-([\s\S]+?)%>/g
+        },
+        //转意成实体,用于过滤html标签
+        entityMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#x27;'
+        },
+        //转意实体的调用方法,当遇到 <%- %> 时,调用
+        _escape = function (string) {
+            if (string == null) 
+                return '';
+            return ('' + string).replace( /[&<>"']/g , function(match){
+                return entityMap[ match ];
+            });
+        },
+        //转意空格之类的字符
+        escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g,
+        escapes = {
+            "'": "'",
+            '\\': '\\',
+            '\r': 'r',
+            '\n': 'n',
+            '\t': 't',
+            '\u2028': 'u2028',
+            '\u2029': 'u2029'
+        },
+        //解析模板标签的正则队列
+        matcher = new RegExp([
+            ( settings.escape ).source,
+            ( settings.interpolate ).source,
+            ( settings.evaluate ).source
+        ].join('|') + '|$', 'g');
     return function(text, data, context) {
         //存放的是组合后的渲染函数
-        var render,result,
-            //匹配模板标签
-            settings = {
-                evaluate    : /<%([\s\S]+?)%>/g,
-                interpolate : /<%=([\s\S]+?)%>/g,
-                escape      : /<%-([\s\S]+?)%>/g
-            },
-            //转意成实体,用于过滤html标签
-            entityMap = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#x27;'
-            },
-            //转意实体的调用方法,当遇到 <%- %> 时,调用
-            _escape = function (string) {
-                if (string == null) 
-                    return '';
-                return ('' + string).replace( /[&<>"']/g , function(match){
-                    return entityMap[ match ];
-                });
-            },
-            //转意空格之类的字符
-            escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g,
-            escapes = {
-                "'": "'",
-                '\\': '\\',
-                '\r': 'r',
-                '\n': 'n',
-                '\t': 't',
-                '\u2028': 'u2028',
-                '\u2029': 'u2029'
-            },
-            //解析模板标签的正则队列
-            matcher = new RegExp([
-                ( settings.escape ).source,
-                ( settings.interpolate ).source,
-                ( settings.evaluate ).source
-            ].join('|') + '|$', 'g'),
+        var compile,
             //最终拼接字符串时,跟中的下标
             index = 0,
             //最终执行的匹配后的字符串
-            source = "__p+='";
+            source = "__p+='",
+            tContext = this;
         //拼接各种形式的语句 => source
         text.replace(matcher, function(match, escape, interpolate, evaluate, offset){
             source += text.slice(index, offset).replace(escaper, function(match){ 
@@ -948,33 +945,18 @@ define('$template',[],function(require){
             "print=function(){__p+=__j.call(arguments,'');};\n" +
             source + "return __p;\n";
         //这里可能会抛异常，请务必保持资源的合法性
-        render = new Function('obj', '_escape' , source);
+        compile = new Function('obj', '_escape', 
+            '$require', 
+            source
+        );
         //当没有传入data时 返回的方法: 颗粒模式
-        if(data===undefined)
-            return renderTemplate;
-        else{
-            return renderTemplate(data, context);
-        }
-        function renderTemplate(data, context){
-            var compenent = {
-                $require: function(compId,compData, compContext){
-                    return require(compId)(compData || data, compContext || context);
-                }
-            };
-            if(context && Object.prototype.toString.call(context) === '[object Object]'){
-                //这里需要复刻新对象出来，如果传递原始的话，则不便处理绑定其上的$require
-                compenent._ = function(){};
-                compenent._.prototype = context;
-                context = new compenent._();
-                context.$require = compenent.$require;
-            }else{
-                context = compenent;
-            } 
-            result = render.call(context,data, _escape );
-            // if(context!=compenent){
-            //     delete context.$require;
-            // }
-            return result;
+        return data===undefined ? render : render(data, context) ; 
+        function render(data, context){
+            function $require(compId, compData, compContext){
+                return require(compId)(compData || data, compContext || context);
+            }
+            context || (context = this === window ? tContext : this);
+            return compile.call(context, data, _escape, $require);
         }
     };
 });;

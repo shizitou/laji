@@ -29,7 +29,11 @@ define('index', function(require) {
 					return 'BRICK_'+val;
 				}
 			};
-			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= this.$require('comp-dataview') %>\n\t<%= this.$require('comp-dataview2') %>\n\t<%= this.$require('comp-dataview3') %>\n\t<%= this.$require('comp-dataview4') %>\n</div>",data,tools); 
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>",data,tools); 
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>").call(tools,data);
+			var dataStr = template.call(tools, "<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>", data); 
+			var dataStr = template.call(tools,"<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>")(data); 
+
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 		},
 		leave: function() {}
