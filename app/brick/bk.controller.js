@@ -54,7 +54,7 @@ define('$controller',['$config','$template'],function(require,exports){
             var view = exports.pageView;
             if (view) {
                 noopDiv.innerHTML = view;
-                self.pageView = noopDiv.firstChild;
+                self.pageView = noopDiv.children[0];
                 noopDiv.innerHTML = "";
                 self.appendView();
             }

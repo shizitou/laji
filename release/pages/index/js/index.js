@@ -6,7 +6,7 @@ define('index', function(require) {
 	require('index.css');
 	return {
 		el: '#page_index',
-		pageView: "<div id=\"page_index\">\n\t<h1>INDEX PAGE</h1>\n\t<div class=\"dataview js-dataView\"></div>\n</div>",
+		pageView: "    <div id=\"page_index\">\n\t\t<h1>INDEX PAGE</h1>\n\t\t<div class=\"dataview js-dataView\"></div>\n\t</div>",
 		init: function(params) {},
 		enter: function(params) {
 			var data = {
