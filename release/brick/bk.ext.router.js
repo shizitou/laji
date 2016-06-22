@@ -18,11 +18,11 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			this.defControl = config.defController;
 			control.init();
 			//获取当前路由碎片
-			this.fragment = util.getFragment()
+			this.fragment = util._getFragment()
 			var that = this;
 			//hash发生改变时触发
 			function checkUrl() {
-				var pageHash = util.getFragment(),
+				var pageHash = util._getFragment(),
 					hash;
 				if (pageHash !== that.fragment) {
 					hash = pageHash;

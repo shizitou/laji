@@ -53,28 +53,28 @@ define('$brick',['$router','$config','$util','$controller'],function(require,exp
 			deplist: deplist
 		});
 	};
-	BK._event = {};
+	var events = {};
 	//globalEvent是为了兼容旧代码的调用
 	BK.bind = BK.globalEvent = function(type,fn){
-		(BK._event[type] || (BK._event[type] = [])).push(fn);
+		(events[type] || (events[type] = [])).push(fn);
 	};
 	BK.unbind = function(type,fn){
 		if(fn){
-			var events = BK._event[type];
-			events && events.forEach(function(item,index,events){
+			var eventList = events[type];
+			eventList && eventList.forEach(function(item,index,events){
 				item===fn && events.splice(index,1);
 			});
 		}else{
-			BK._event[type] = [];
+			events[type] = [];
 		}
 	};
 	BK.trigger = function(type,args){
-		var events = BK._event[type],j;
+		var eventList = events[type],j;
 		args = args || [];
-		if(events){
-			if(j = events.length){
+		if(eventList){
+			if(j = eventList.length){
 				for(var i=0;i<j;i++){
-					events[i].apply(window,args);
+					eventList[i].apply(window,args);
 				}
 			}
 		}

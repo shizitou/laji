@@ -7,7 +7,7 @@
 * module.js //模块加载器，采用cmd格式
 * module.ext.cache.js //缓存模块至本地存储
 * brick.js //满足实现业务的基本代码
-* bk.config.js //业务的配置信息 
+* bk.config.js //业务的配置信息
 * bk.router.js //对路由的处理
 * bk.controller.js //用来调用页面模块管理器
 * bk.template.js //来自underscore.template模板引擎
