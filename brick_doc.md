@@ -1,7 +1,7 @@
 # brick.js
 ## 框架简介
 本框架适用于移动端项目开发。  
-当前版本 3.4
+当前版本 3.5
 
 ## 框架文件概述
 * module.js //模块加载器，采用cmd格式
@@ -18,7 +18,7 @@
 ## 框架的使用
 ### 文件引入
 **module.js**	
-module.ext.cache.js	
+module.ext.cache.js	 
 **bk.config.js**	
 **bk.controller.js**	
 **bk.util.js**	
@@ -80,13 +80,13 @@ BK.start(); //开启框架
 	<dd>当通过hash参数找不到ct时,执行此项配置的模块</dd>
 	<dt>rootView</dt>
 	<dd>不设置时，指向body元素</dd>
-	<dt>ajaxTimeout,ajaxDataType,ajaxCache</dt>
+	<dt>ajaxTimeout, ajaxDataType, ajaxCache</dt>
 	<dd>架构没有自身的ajax请求功能,使用的是外部模块$.ajax，<br />
-	所以此项参数会按照timeout,dataType,cache传递给外部的ajax</dd>
-	<dt>cache,hash</dt>
+	所以此项参数会按照 timeout, dataType, cache 传递给外部的ajax</dd>
+	<dt>cache, hash</dt>
 	<dd>这两个参数需要在引入 model.ext.cache.js 时才会生效</dd>
 </dl>
-			
+
 ### 开始使用
 #### 定义页面模块：
 ```
@@ -110,6 +110,9 @@ define('modelId',['depId'],function(require,exports,model){
   * [特别声明:**pageView**,**el**,是**必要**的]
   * [特别声明:el指向的必须是元素的id]
   * [特别声明:当页面引入了jq,zepto时,el会变成$对象,否则则是原生DOM对象]
+* params:  
+  * 是指当前路由的hash部分解析过后的key/value参数对象
+  * 这里的路由参数是删除了ct,ac之后的[后面会介绍到路由参数] 
 * exports.init: 
   * 页面初始化(第一次进入页面时触发一次，后续不在触发)
 * exports.enter: 
@@ -128,29 +131,35 @@ define('modelId',['depId'],function(require,exports,model){
 * 加载完毕后运行此模块，设置`.el`属性为DOM元素，执行`.init`，`.enter`方法  
 * 首次启动框架时，会触发一次页面模块的解析
 
+### 路由解析
+* 本框架的用URL的hash部分来当做路由参数
+* 路由的形式为 #!/k/v/k2/v2，经由框架解析后，开发者在页面中接受到的是 `{k:v,k2:v2}`的对象参数[备注：这里不会进行变量格式转换，都是字符串]
+* 本框架将路由中key为"ct","ac"对应的value拼接在一起作为页面模块的触发ID。
+* 所以，在当使用BK.link进行页面跳转时,切勿在自定义参数(params)中传入"ct","ac"
+
 ## API详解
 ### 全局的工具方法
 这里介绍的方法都是绑定在BK全局变量上的。  
 
-* BK.alert(text [,time]);
+* `BK.alert(text [,time]);`
   * 用于页面简单的提示语
   * time单位是秒,默认1秒
   * [特别声明]此方法在使用前需要使用 `BK.alert.setEl(element)` 指定一个DOM元素
-* BK.parseHash([hashStr]);
+* `BK.parseHash([hashStr]);`
   * 解析hashStr字符串成对象返回
   * 如若不传递的话,解析使用的是网页地址栏的hash字符串
   * [特别声明]这里所说的字符串是指"key/val"格式
-* BK.stringifyHash(obj);
+* `BK.stringifyHash(obj);`
   * 将对象转换成"key/val"格式的字符串
-* BK.genPHash(ct [,obj]);
+* `BK.genPHash(ct [,obj]);`
   * 返回待控制参数的路由字符串
-* BK.parseSearch([searchStr]);
+* `BK.parseSearch([searchStr]);`
   * 解析查询字符串成对象
   * 默认是解析当前页面的查询字符串
-* BK.history(command,ct [,params]);
+* `BK.history(command,ct [,params]);`
   * 设置地址为指定页面路由，但不刷新当前页面
   * command: 'push', 'replace' //pushState,replaceState
-* BK.link(ct [,params])
+* `BK.link(ct [,params]);`
   * 跳转到其他页面
   * [特别声明] 次方法在引入 bk.ext.router.js 后才会有
 
@@ -256,7 +265,7 @@ BK.deplist({
 
 //需要声明模块路径
 BK.path({
-	index.css: 'xx/xx/css/index.css'
+	'index.css': 'xx/xx/css/index.css'
 });
 ```
 ### 关于UI组件化的使用
