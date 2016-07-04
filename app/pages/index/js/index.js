@@ -1,6 +1,7 @@
 define('index', function(require) {
 	var ls = require('$localStorage');
 	var template = require('$template');
+	var $http = require('$http');
 	require('comp-dataview');require('comp-dataview2');
 	require('comp-dataview3');require('comp-dataview4');
 	require('index.css');
@@ -29,12 +30,18 @@ define('index', function(require) {
 					return 'BRICK_'+val;
 				}
 			};
+			//模板相关逻辑
 			var dataStr = template(__inline('../tpl/index.tpl.html'),data,tools); 
 			var dataStr = template(__inline('../tpl/index.tpl.html')).call(tools,data);
 			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
-
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
+			//$http
+			$http.post('ajax.test.js',{
+				size: 10
+			},function(res){
+				console.log(JSON.parse(res));
+			},'text');
 		},
 		leave: function() {}
 	}
