@@ -1,16 +1,14 @@
 /*
-	TODO::
-	router对ct,ac的宽大处理
-	数据的sessionStorage缓存的处理
-	fastClick的嵌入
-	UICompenent嵌入
-	数据视图绑定（大工程）
+	version: 3.5.1
+	更新说明：比较前一版本，修正了 $http.post, $http.get 方法
+		参数与 zepto,jquery 官网文档保持一致
+		( url, data, success, dataType )
 **/
 (function(global, undefined) {
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.2.0',
+		version: '3.5.1',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
