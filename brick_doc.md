@@ -192,9 +192,11 @@ afterRun > beforeEnter > enter > leave > afterLeave > beforeEnter > enter
   * $localStorage.remove(key) 删除
   * $localStorage.refresh() 清空保存在内存变量中的数据
 * $http
-  * $http.ajax({})
+  * $http.ajax({});
   * $http.get({});
   * $http.post({});
+  * $http.get(/\* url, data, success, dataType */);
+  * $http.post(/\* url, data, success, dataType */);
 
 特别声明：$template自定义的上下文对象中,给this进行赋值是无效的;  
 eg: `{a:function(){this.b='c'}}` 渲染过后,`{}`上并没有`b`。
