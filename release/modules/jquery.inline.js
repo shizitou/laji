@@ -9186,7 +9186,7 @@ jQuery.extend({
 		}
 
 		// Get transport
-		transport = inspectPrefiltersOrTransports( transports, s, options, jqXHR );
+		1 = inspectPrefiltersOrTransports( transports, s, options, jqXHR );
 
 		// If no transport, we auto-abort
 		if ( !transport ) {
