@@ -152,7 +152,7 @@ define('$util', function() {
 			for(var n in _util){
 				if(_util.hasOwnProperty(n) && !object[n] ){
 					if(n.charAt(0)==='_')
-						break;
+						continue;
 					object[n] = _util[n];
 				}
 			}

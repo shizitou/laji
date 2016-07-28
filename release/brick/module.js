@@ -51,6 +51,8 @@
 		return paths && type(paths[id])==='string' ? paths[id] : id;
 	}
 	var STATUS = {
+		// 0 - 刚刚被初始化
+		INIT: 1,
 		// 2 - 请求成功，执行了define来进行存储模块
 		SAVED: 2,
 		// 3 - 模块正在被解析
@@ -126,7 +128,7 @@
 				node.onreadystatechange = function() {
 					if (/loaded|complete/.test(this.readyState)) {
 						clearTimeout(tid);
-						nodeHandle('UNKNOW');
+						nodeHandle('LOAD');
 					}
 				};
 			}
@@ -138,13 +140,30 @@
 			baseElement ?
 				head.insertBefore(node, baseElement) :
 				head.appendChild(node);
-			//status: LOAD, ERROR, TIMEOUT, UNKNOW
+			//status: LOAD, ERROR, TIMEOUT
 			function nodeHandle(status) {
-				loaded();
+				loaded(status);
 				head.removeChild(node);
 			}
 		};
 	})();
+	define.reload = function (modId,success,fail) {
+		//获取模块对象
+		var mod = Module.get(modId);
+		var oriStatus = mod.status;
+		//设置状态为初始化状态
+		mod.status = STATUS.INIT;
+		define.load([modId],function(status){
+			if(status === 'LOAD'){
+				success && success();
+			} else {
+				fail && fail();
+				if (STATUS.EXECUTED === oriStatus) {
+					mod.status = STATUS.EXECUTED;
+				}
+			}
+		});
+	};
 	function Module(modId) {
 		this.id = modId;
 		// css,js
@@ -155,7 +174,7 @@
 		//onload的监听函数
 		this.loaded = [];
 		//模块的状态
-		this.status = 0;
+		this.status = STATUS.INIT;
 	}
 	Module.prototype.init = function(){
 		//取出真实路径

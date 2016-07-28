@@ -42,6 +42,14 @@ define('index', function(require) {
 			},function(res){
 				console.log(JSON.parse(res));
 			},'text');
+			//define.reload
+			setTimeout(function () {
+				define.reload('comp-dataview666',function(){
+					console.log('reload-success');
+				},function () {
+					console.log('reload-fail');
+				});
+			},1000);
 		},
 		leave: function() {}
 	}
