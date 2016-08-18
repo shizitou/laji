@@ -19,7 +19,6 @@
 	/* 载入框架 */
 	__inline('./brick/module.js');
 	/* module.ext.*系列一定要放到module.js之后 */
-	__inline('./brick/module.ext.upbychar.js');
 	/* __inline('./brick/module.ext.upbychar.js'); */
 	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
@@ -37,7 +36,7 @@
 <script>
 	BK.deplist({
 		'index': ['comp-dataview3','comp-dataview4',
-			'comp-dataview','comp-dataview2', 'index.css'
+			'comp-dataview','comp-dataview2',
 		],
 		'comp-dataview': ['comp-datahead','comp-datalist'],
 		'comp-dataview2': ['comp-datahead2','comp-datalist'],
@@ -68,6 +67,8 @@ BK.config({
 	// 	var baseUrl = 'http://www.baidu.com/js/combo.js??';
 	// 	return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
 	// },
+	ajaxCache: true,
+	ajaxCacheHash: '~~'
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

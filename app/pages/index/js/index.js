@@ -4,7 +4,6 @@ define('index', function(require) {
 	var $http = require('$http');
 	require('comp-dataview');require('comp-dataview2');
 	require('comp-dataview3');require('comp-dataview4');
-	require('index.css');
 	return {
 		el: '#page_index',
 		pageView: __inline('../html/index.html'),
@@ -37,19 +36,34 @@ define('index', function(require) {
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 			//$http
-			$http.post('ajax.test.js',{
-				size: 10
-			},function(res){
-				console.log(JSON.parse(res));
-			},'text');
+			$http.ajax({
+				url: '/a/b/../c/../../ajax.test.js',
+				type: 'POST',
+				data: {
+					size: 10,
+					page: 2,
+				},
+				cache: true,
+				// cacheFilter: function(res){
+				// 	return res === 10;
+				// },
+				cacheHash: '543',
+				dataType: 'text',
+				success: function(res,status){
+					console.log('options: ',status,JSON.parse(res));
+				},
+			}).done(function(res,status){
+				console.log(status,JSON.parse(res));
+			});
+			console.log('ajax-----------');
 			//define.reload
-			setTimeout(function () {
-				define.reload('comp-dataview666',function(){
-					console.log('reload-success');
-				},function () {
-					console.log('reload-fail');
-				});
-			},1000);
+			// setTimeout(function () {
+			// 	define.reload('comp-dataview',function(){
+			// 		console.log('reload-success');
+			// 	},function () {
+			// 		console.log('reload-fail');
+			// 	});
+			// },1000);
 		},
 		leave: function() {}
 	}

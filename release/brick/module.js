@@ -1,4 +1,12 @@
 /*
+	version: 3.5.2
+		为$http添加了sessionStorage的数据缓存操作:
+			开启参数为： ajaxCache
+			过滤器：ajaxCacheFile
+			添加后缀：ajaxCacheHash
+		当使用缓存得到数据时,框架会尽量返回$.Deferred实例
+			如果引用的zepto没有引入Deferred则使用原生Promise,否则则返回undefined;
+
 	version: 3.5.1
 	更新说明：比较前一版本，修正了 $http.post, $http.get 方法
 		参数与 zepto,jquery 官网文档保持一致
@@ -8,7 +16,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.5.1',
+		version: '3.5.2',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -90,6 +98,14 @@
 			}
 		}
 	};
+	// define.redefine = function(factory){
+	// 	global.define = factory;
+	// 	for(var n in define){
+	// 		if(~'redefine|'.indexOf(n)) continue;
+	// 		factory[n] = define[n];
+	// 	}
+	// 	factory['originDefine'] = define;
+	// };
 	define.mount = function(node,handle){
 		mounts.add(node,handle);
 		return this;

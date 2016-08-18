@@ -13,6 +13,8 @@ define('$config',function(){
 		ajaxTimeout: 15000,
 		//ajax默认数据类型
 		ajaxDataType: 'json',
-		ajaxCache: false
+		ajaxCache: false,
+		ajaxCacheFilter: function(res){ return !!res; },
+		ajaxCacheHash: ''
 	};
 });
