@@ -30,7 +30,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.5.2', 
+		version: '3.7.0', 
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
