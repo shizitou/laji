@@ -6,7 +6,7 @@ define('index', function(require) {
 	require('comp-dataview3');require('comp-dataview4');
 	return {
 		el: '#page_index',
-		pageView: "    <div id=\"page_index\">\r\n\t\t<h1>INDEX PAGE</h1>\r\n\t\t<div class=\"dataview js-dataView\"></div>\r\n\t</div>",
+		pageView: "    <div id=\"page_index\">\n\t\t<h1>INDEX PAGE</h1>\n\t\t<div class=\"dataview js-dataView\"></div>\n\t</div>",
 		init: function(params) {},
 		enter: function(params) {
 			var data = {
@@ -29,13 +29,13 @@ define('index', function(require) {
 					return 'BRICK_'+val;
 				}
 			};
-			//模板相关逻辑
-			var dataStr = template("<div>\r\n\t<%= this.addPrefix('_TEST_THIS') %>\r\n\t<%= $require('comp-dataview') %>\r\n\t<%= $require('comp-dataview2') %>\r\n\t<%= $require('comp-dataview3') %>\r\n\t<%= $require('comp-dataview4') %>\r\n</div>",data,tools); 
-			var dataStr = template("<div>\r\n\t<%= this.addPrefix('_TEST_THIS') %>\r\n\t<%= $require('comp-dataview') %>\r\n\t<%= $require('comp-dataview2') %>\r\n\t<%= $require('comp-dataview3') %>\r\n\t<%= $require('comp-dataview4') %>\r\n</div>").call(tools,data);
-			var dataStr = template.call(tools, "<div>\r\n\t<%= this.addPrefix('_TEST_THIS') %>\r\n\t<%= $require('comp-dataview') %>\r\n\t<%= $require('comp-dataview2') %>\r\n\t<%= $require('comp-dataview3') %>\r\n\t<%= $require('comp-dataview4') %>\r\n</div>", data); 
-			var dataStr = template.call(tools,"<div>\r\n\t<%= this.addPrefix('_TEST_THIS') %>\r\n\t<%= $require('comp-dataview') %>\r\n\t<%= $require('comp-dataview2') %>\r\n\t<%= $require('comp-dataview3') %>\r\n\t<%= $require('comp-dataview4') %>\r\n</div>")(data); 
+			/* 测试模块引擎的自定义context是否可用 */
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>",data,tools); 
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>").call(tools,data);
+			var dataStr = template.call(tools, "<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>", data); 
+			var dataStr = template.call(tools,"<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('comp-dataview') %>\n\t<%= $require('comp-dataview2') %>\n\t<%= $require('comp-dataview3') %>\n\t<%= $require('comp-dataview4') %>\n</div>")(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
-			//$http
+			/* 测试 $http 模块的cache是否生效 *
 			$http.ajax({
 				url: '/a/b/../c/../../ajax.test.js',
 				type: 'POST',
@@ -47,23 +47,29 @@ define('index', function(require) {
 				// cacheFilter: function(res){
 				// 	return res === 10;
 				// },
-				cacheHash: '543',
+				cacheHash: '',
 				dataType: 'text',
 				success: function(res,status){
-					console.log('options: ',status,JSON.parse(res));
+					// console.log('options: ',status,JSON.parse(res));
 				},
 			}).done(function(res,status){
 				console.log(status,JSON.parse(res));
 			});
-			console.log('ajax-----------');
-			//define.reload
-			// setTimeout(function () {
-			// 	define.reload('comp-dataview',function(){
-			// 		console.log('reload-success');
-			// 	},function () {
-			// 		console.log('reload-fail');
-			// 	});
-			// },1000);
+			//*/
+			
+			/* 测试重载方法是否好用 define.redefine & define.reload */
+			define.redefine(function(){
+				console.log(this);
+			});
+			console.log('define.aaa: ',define.aaa);
+			setTimeout(function () {
+				define.reload('comp-dataview',function(){
+					console.log('reload-success');
+				},function () {
+					console.log('reload-fail');
+				});
+			},1000);
+			//*/
 		},
 		leave: function() {}
 	}

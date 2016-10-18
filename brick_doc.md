@@ -1,7 +1,7 @@
 # brick.js
 ## 框架简介
 本框架适用于移动端项目开发。  
-当前版本 3.5
+当前版本 3.5.2
 
 ## 框架文件概述
 * module.js //模块加载器，采用cmd格式
@@ -63,6 +63,8 @@ var config = {
 	ajaxTimeout: 15000,//$http请求时的超时时间
 	ajaxDataType: 'json',//$http请求时的数据类型
 	ajaxCache: false, //$http请求时是否添加动态时间戳
+	ajaxCacheFilter: fun //$http缓存结果过滤器(框架根据返回结果的真假来抉择是否进行存储)
+	ajaxCacheHash: '', //$http缓存时的后缀(一般情况下无需设置)
 	timeout: 15, //模块请求的超时时间
 	paths: {}, //模块id与请求路径的映射
 	deplist: {}, //模块依赖关系的配置表
@@ -185,24 +187,26 @@ afterRun > beforeEnter > enter > leave > afterLeave > beforeEnter > enter
 ### 系统模块的用法
 
 * $template
-  * $template(text, data, context) 模板渲染
+  * `$template(text, data, context)` 模板渲染
 * $localStorage
-  * $localStorage.set(key, val) 存储
-  * $localStorage.get(key) 获得
-  * $localStorage.remove(key) 删除
-  * $localStorage.refresh() 清空保存在内存变量中的数据
+  * `$localStorage.set(key, val)` 存储
+  * `$localStorage.get(key)` 获得
+  * `$localStorage.remove(key)` 删除
+  * `$localStorage.refresh()` 清空保存在内存变量中的数据
 * $http
-<<<<<<< HEAD
-  * $http.ajax({});
-  * $http.get({});
-  * $http.post({});
-  * $http.get(/\* url, data, success, dataType */);
-  * $http.post(/\* url, data, success, dataType */);
-=======
-  * $http.ajax({})
-  * $http.get({});
-  * $http.post({});
->>>>>>> brick/master
+  * `$http.ajax({})`
+  * `$http.get({})`
+  * `$http.post({})`
+  * `$http.get(/* url, data, success, dataType */)`
+  * `$http.post(/* url, data, success, dataType */)`
+
+#### ajax配置选项详解  
+jquery,zepto原本所需要的参数都可以传递过来，这里还可以接受一些框架需要的配置参数
+
+* cache: Boolean //是否缓存结果(基于sessionStorage)【默认使用ajaxCache】
+* cacheFilter: fun //对请求结果进行存储过滤【默认使用ajaxCacheFilter】
+* cacheHash: '' //存储时使用后缀(对有问题的请求进行修正时可用)【默认使用ajaxCacheHash】
+  
 
 特别声明：$template自定义的上下文对象中,给this进行赋值是无效的;  
 eg: `{a:function(){this.b='c'}}` 渲染过后,`{}`上并没有`b`。

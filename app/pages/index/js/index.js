@@ -29,13 +29,13 @@ define('index', function(require) {
 					return 'BRICK_'+val;
 				}
 			};
-			//模板相关逻辑
+			/* 测试模块引擎的自定义context是否可用 */
 			var dataStr = template(__inline('../tpl/index.tpl.html'),data,tools); 
 			var dataStr = template(__inline('../tpl/index.tpl.html')).call(tools,data);
 			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
-			//$http
+			/* 测试 $http 模块的cache是否生效 *
 			$http.ajax({
 				url: '/a/b/../c/../../ajax.test.js',
 				type: 'POST',
@@ -47,23 +47,29 @@ define('index', function(require) {
 				// cacheFilter: function(res){
 				// 	return res === 10;
 				// },
-				cacheHash: '543',
+				cacheHash: '',
 				dataType: 'text',
 				success: function(res,status){
-					console.log('options: ',status,JSON.parse(res));
+					// console.log('options: ',status,JSON.parse(res));
 				},
 			}).done(function(res,status){
 				console.log(status,JSON.parse(res));
 			});
-			console.log('ajax-----------');
-			//define.reload
-			// setTimeout(function () {
-			// 	define.reload('comp-dataview',function(){
-			// 		console.log('reload-success');
-			// 	},function () {
-			// 		console.log('reload-fail');
-			// 	});
-			// },1000);
+			//*/
+			
+			/* 测试重载方法是否好用 define.redefine & define.reload */
+			define.redefine(function(){
+				console.log(this);
+			});
+			console.log('define.aaa: ',define.aaa);
+			setTimeout(function () {
+				define.reload('comp-dataview',function(){
+					console.log('reload-success');
+				},function () {
+					console.log('reload-fail');
+				});
+			},1000);
+			//*/
 		},
 		leave: function() {}
 	}

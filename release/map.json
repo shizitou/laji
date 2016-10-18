@@ -1,5 +1,9 @@
 {
     "res": {
+        "ajax.test.js": {
+            "uri": "/ajax.test.js",
+            "type": "js"
+        },
         "brick/bk.config.js": {
             "uri": "/brick/bk.config.js",
             "type": "js"
@@ -33,7 +37,9 @@
             "uri": "/brick/bk.http.js",
             "type": "js",
             "deps": [
-                "$config"
+                "$config",
+                "$DeferByPromise",
+                "$dataCacheBySession"
             ]
         },
         "brick/bk.localstorage.js": {
@@ -231,11 +237,11 @@
             "deps": [
                 "$localStorage",
                 "$template",
+                "$http",
                 "comp-dataview",
                 "comp-dataview2",
                 "comp-dataview3",
-                "comp-dataview4",
-                "index.css"
+                "comp-dataview4"
             ]
         }
     },

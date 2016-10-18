@@ -1,4 +1,18 @@
 /*
+	version: 3.7.1
+		配合工程化动态加载，新增define.reload功能：
+			define.reload('modId'[,successFun][,failFun]);
+		此函数会清楚模块对应的内存缓存，并触发模块请求;
+
+	version: 3.7.0
+		合并了 3.6 与 3.5 版本;
+		增加了按字符更新的缓存插件:module.ext.upbychar.js
+
+		添加 define.redefine(factory) 方法
+		此方法用来重定义 window.define 方法，并将旧有的 window.define方法复制给factory
+
+		fixed bug: 引用ext.upbychar.js 后 define身上静态方法失效的问题
+
 	version: 3.5.2
 		为$http添加了sessionStorage的数据缓存操作:
 			开启参数为： ajaxCache
@@ -8,15 +22,15 @@
 			如果引用的zepto没有引入Deferred则使用原生Promise,否则则返回undefined;
 
 	version: 3.5.1
-	更新说明：比较前一版本，修正了 $http.post, $http.get 方法
+		修正了 $http.post, $http.get 方法
 		参数与 zepto,jquery 官网文档保持一致
-		( url, data, success, dataType )
+			( url, data, success, dataType )
 **/
 (function(global, undefined) {
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.5.2',
+		version: '3.5.2', 
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -26,7 +40,7 @@
 		}
 	};
 	/**
-	config: 在config之后触发(可以用来对配置信息进行一些处理) 
+	config: 在config之后触发(可以用来对配置信息进行一些处理)  
 	defined: 在defined之后触发(可以用来对处理好id,deps,fn进行缓存) 
 	fetchModuleFilter: 过滤掉不需要加载(已缓存的)的模块,当返回true时则请求该模块
 	genUrl: 在进行模块请求时触发,当返回url时,则不触发后续的路由处理(包括combo) 
@@ -98,14 +112,15 @@
 			}
 		}
 	};
-	// define.redefine = function(factory){
-	// 	global.define = factory;
-	// 	for(var n in define){
-	// 		if(~'redefine|'.indexOf(n)) continue;
-	// 		factory[n] = define[n];
-	// 	}
-	// 	factory['originDefine'] = define;
-	// };
+	define.redefine = function(factory){
+		//将当前window的define函数上的静态方法，全部复制给新函数
+		var originDefine = global.define;
+		for(var n in originDefine){
+			factory[n] = originDefine[n];
+		}
+		factory['originDefine'] = originDefine;
+		global.define = factory;
+	};
 	define.mount = function(node,handle){
 		mounts.add(node,handle);
 		return this;
