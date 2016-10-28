@@ -1,7 +1,7 @@
 /*
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
-			define.reload('modId'[,successFun][,failFun]);
+			define.reload('modId'[,successFun(require)][,failFun(require)]);
 		此函数会清楚模块对应的内存缓存，并触发模块请求;
 
 	version: 3.7.0
@@ -30,7 +30,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.0', 
+		version: '3.7.1', 
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -186,14 +186,17 @@
 		mod.status = STATUS.INIT;
 		define.load([modId],function(status){
 			if(status === 'LOAD'){
-				success && success();
+				success && success(require);
 			} else {
-				fail && fail();
+				fail && fail(require);
 				if (STATUS.EXECUTED === oriStatus) {
 					mod.status = STATUS.EXECUTED;
 				}
 			}
 		});
+		function require(id) {
+			return Module.get(id).exec();
+		}
 	};
 	function Module(modId) {
 		this.id = modId;

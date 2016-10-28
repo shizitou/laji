@@ -58,13 +58,13 @@ define('index', function(require) {
 			//*/
 			
 			/* 测试重载方法是否好用 define.redefine & define.reload */
-			define.redefine(function(){
-				console.log(this);
-			});
-			console.log('define.aaa: ',define.aaa);
+			// define.redefine(function(modid,deps,factory){
+			// 	console.log('redefine 之后的函数');
+			// 	console.log('redefine:',modid,deps,factory);
+			// });
 			setTimeout(function () {
-				define.reload('comp-dataview',function(){
-					console.log('reload-success');
+				define.reload('comp-dataview',function(require){
+					console.log(require('comp-dataview'));
 				},function () {
 					console.log('reload-fail');
 				});
