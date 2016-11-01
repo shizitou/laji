@@ -98,19 +98,19 @@ define('$util', function() {
 	};
 	//解析search参数
 	util.parseSearch = function(search) {
-		search = search || location.search;
-		search = search.split('&');
-		var ln = search.length - 1,
-			option,
-			params = {},
-			de = decodeURIComponent;
-		for (; ln >= 0; ln--) {
-			option = search[ln];
-			params[option.split('=')[0]] = de(option.substr(option.indexOf('=') + 1));
+			search = search || location.search;
+			search = search.split('&');
+			var ln = search.length - 1,
+				option,
+				params = {},
+				de = decodeURIComponent;
+			for (; ln >= 0; ln--) {
+				option = search[ln];
+				params[option.split('=')[0]] = de(option.substr(option.indexOf('=') + 1));
+			}
+			return params;
 		}
-		return params;
-	}
-	//command: 'push' || 'place'
+		//command: 'push' || 'place'
 	util.history = function(command, page, params) {
 		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
@@ -149,9 +149,9 @@ define('$util', function() {
 		},
 		bindTo: function(object) {
 			var _util = util;
-			for(var n in _util){
-				if(_util.hasOwnProperty(n) && !object[n] ){
-					if(n.charAt(0)==='_')
+			for (var n in _util) {
+				if (_util.hasOwnProperty(n) && !object[n]) {
+					if (n.charAt(0) === '_')
 						continue;
 					object[n] = _util[n];
 				}

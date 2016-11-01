@@ -1,5 +1,5 @@
 define('comp-datalist2',function (require, exports, module) {
-  module.exports = require('$Compenent')('comp-datalist2',{
+  module.exports = require('$component')('comp-datalist2',{
     tpl: '<ul>\
 	    	<%for(var i=0,j=items.length;i<j;i++){%>\
 				<li><%= items[i].author %>：<%= items[i].title %></li>\

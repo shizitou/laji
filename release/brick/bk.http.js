@@ -1,4 +1,4 @@
-define('$DeferByPromise',function(){
+define('$DeferByPromise', function() {
 	/**
 		这里是做了一个基于Promise的defer类，
 		但和$.Deferred还是有些区别：
@@ -6,15 +6,15 @@ define('$DeferByPromise',function(){
 			$.Deferred(fn) 这里的fn将接受到原生Promise的两个触发方法
 		处理了fail队列触发时异常处理
 	*/
-	if(!window.Promise) return ;
-	
+	if (!window.Promise) return;
+
 	//为Promise实例绑定done,fail方法
-	Promise.prototype.done = function(){
+	Promise.prototype.done = function() {
 		var defer = this;
 		(function add(args) {
-			[].forEach.call(args,function(arg){
+			[].forEach.call(args, function(arg) {
 				if (typeof arg === "function") {
-					return defer.then(arg,function(){}); // ?? why ??
+					return defer.then(arg, function() {}); // ?? why ??
 				} else if (arg && arg.length && typeof arg !== 'string') {
 					add(arg)
 				}
@@ -22,46 +22,47 @@ define('$DeferByPromise',function(){
 		})(arguments);
 		return this;
 	}
-	Promise.prototype.fail = function(){
-		var defer = this;
-		(function add(args) {
-			[].forEach.call(args,function(arg){
-				if (typeof arg === "function") {
-					return defer.then(null,arg);
-				} else if (arg && arg.length && typeof arg !== 'string') {
-					add(arg)
-				}
-			});
-		})(arguments);
-		return this;
-	}
-	//处理抛异常的情况
+	Promise.prototype.fail = function() {
+			var defer = this;
+			(function add(args) {
+				[].forEach.call(args, function(arg) {
+					if (typeof arg === "function") {
+						return defer.then(null, arg);
+					} else if (arg && arg.length && typeof arg !== 'string') {
+						add(arg)
+					}
+				});
+			})(arguments);
+			return this;
+		}
+		//处理抛异常的情况
 	Promise.prototype._then = Promise.prototype.then;
-	Promise.prototype.then = function(done,fail){
+	Promise.prototype.then = function(done, fail) {
 		var newPro = new Promise();
-		function handlerReturn(returned){
+
+		function handlerReturn(returned) {
 			returned instanceof Promise &&
 				returned.done(newPro.resolve).fail(newPro.reject)
 		}
-		this._then(function(res){
+		this._then(function(res) {
 			handlerReturn(done && done(res));
-		},function(res){
+		}, function(res) {
 			handlerReturn(fail && fail(res));
 		});
 		return newPro;
 	}
 	window._Promise = Promise;
 	//为Promise实例绑定resolve,reject方法
-	window.Promise = function(callback){
-		var res,rej;
-		var pro = new _Promise(function(resolve,reject){
-			res = function (res){
+	window.Promise = function(callback) {
+		var res, rej;
+		var pro = new _Promise(function(resolve, reject) {
+			res = function(res) {
 				resolve(res);
 			};
-			rej = function (res){
+			rej = function(res) {
 				reject(res);
 			};
-			callback && callback(res,rej);
+			callback && callback(res, rej);
 		});
 		pro.resolve = res;
 		pro.reject = rej;
@@ -69,41 +70,44 @@ define('$DeferByPromise',function(){
 	}
 	Promise.prototype = _Promise.prototype;
 });
-define('$dataCacheBySession',function(require){
+define('$dataCacheBySession', function(require) {
 	var hash = '';
-	var sessionStorage = window.sessionStorage || function(){};
-	function getItem(key){
-		try{
+	var sessionStorage = window.sessionStorage || function() {};
+
+	function getItem(key) {
+		try {
 			return sessionStorage.getItem(key);
-		}catch(_e){}
+		} catch (_e) {}
 	}
-	function setItem(key,val){
-		try{
-			this.sessionStorage.setItem(key,val);
-		}catch(_e){}
+
+	function setItem(key, val) {
+		try {
+			this.sessionStorage.setItem(key, val);
+		} catch (_e) {}
 	}
-	function getKey(queryUrl, type, data){
+
+	function getKey(queryUrl, type, data) {
 		var loc = location;
-		return hash+'|'+type.slice(0,1)+'|'+
-			normalize(loc.host+loc.pathname+'/'+queryUrl)+'|'+
+		return hash + '|' + type.slice(0, 1) + '|' +
+			normalize(loc.host + loc.pathname + '/' + queryUrl) + '|' +
 			joinData(data);
 	}
 	return {
-		setHash: function(h){
+		setHash: function(h) {
 			hash = h;
 		},
-		set: function (queryUrl, type, data, result) {
+		set: function(queryUrl, type, data, result) {
 			typeof result === 'string' || (result = JSON.stringify(result));
 			return setItem(getKey(queryUrl, type, data), result);
 		},
-		get: function (queryUrl, type, data) {
+		get: function(queryUrl, type, data) {
 			return getItem(getKey(queryUrl, type, data));
 		}
 	};
 	//路径处理，合理去除掉 ./ ../ //
-	function normalize(/*pathA[,pathB,pathC]*/) {
+	function normalize( /*pathA[,pathB,pathC]*/ ) {
 		var path = [];
-		var i,arg,parts;
+		var i, arg, parts;
 		for (i = 0; i < arguments.length; i++) {
 			arg = arguments[i];
 			arg && path.push(arg);
@@ -133,31 +137,33 @@ define('$dataCacheBySession',function(require){
 		}
 		return path.join('/');
 	}
-	function joinData(obj){
+
+	function joinData(obj) {
 		var resArr = [];
-		for(var n in obj){
-			resArr.push(''+n+obj[n]);
+		for (var n in obj) {
+			resArr.push('' + n + obj[n]);
 		}
 		return resArr.join('|');
 	}
 });
-define('$http',['$config'], function(require) {
+define('$http', ['$config'], function(require) {
 	//这里需要对zepto强化一些操作： then,when
 	var xhr = window.$ && $.ajax,
 		support = !!xhr,
 		config = require('$config'),
-		Deferred,sessionStore;
+		Deferred, sessionStore;
 	//屏蔽掉$上的ajaxAPI,让开发者强制使用$http模块
-	if(support){
-		Deferred = $ && $.Deferred ? 
+	if (support) {
+		Deferred = $ && $.Deferred ?
 			$.Deferred :
 			window.Promise ?
-				(require('$DeferByPromise'),Promise) : null ;
-		delete $.ajax,delete $.get,delete $.post;
+			(require('$DeferByPromise'), Promise) : null;
+		delete $.ajax, delete $.get, delete $.post;
 		sessionStore = require('$dataCacheBySession');
 	}
+
 	function parseArguments(url, data, success, dataType) {
-		if(typeof url === 'object') // {url:, data:, success:}
+		if (typeof url === 'object') // {url:, data:, success:}
 			return url;
 		if (typeof data === 'function') // 'url', func, 'json'
 			dataType = success, success = data, data = undefined;
@@ -171,76 +177,81 @@ define('$http',['$config'], function(require) {
 		}
 	}
 
-	function ajax(options){
+	function ajax(options) {
 		var result;
 		var url = options.url,
 			type = options.type,
 			data = options.data,
+			dataType = options.dataType,
 			success = options.success,
 			defer;
-		if(options.cache){
+		if (options.cache) {
 			sessionStore.setHash(options.cacheHash);
 			result = sessionStore.get(url, type, data);
-			if(result){
-				if(Deferred){
-					defer = new Deferred();
-					setTimeout(function(){ //保持异步
-						defer.resolve(result,'success');
-					},4);
-				}else{
-					success && setTimeout(success,4,result,'success');
-				}
+			//根据请求类型返回对应结果： json,text
+			if (result && dataType === 'json') {
+				try {
+					result = JSON.parse(result);
+				} catch (_e) {};
+			}
+			if (result) {
+				defer = Deferred ? new Deferred() : null;
+				setTimeout(function() {
+					success && setTimeout(success, 4, result, 'success');
+					defer && defer.resolve(result, 'success');
+				}, 4);
 				return defer;
 			}
 		}
+
 		//发送请求
 		return xhr({
 			url: url,
 			type: type,
 			data: data,
-			dataType: options.dataType,
+			dataType: dataType,
 			timeout: options.timeout,
 			cache: options.cache,
-			success: function (result) {
+			success: function(result) {
 				var pass;
-				if(options.cache){
+				if (options.cache) {
 					pass = typeof options.cacheFilter === 'function' ?
 						!!options.cacheFilter(result) : false;
 					pass && sessionStore.set(url, type, data, result);
 				}
 				success && success(result);
 			},
-			error: function (result) {
+			error: function(result) {
 				options.error && options.error(result);
 			}
 		});
 	}
 
 	var http = {
-		ajax: function(options){
-			if(!support)
+		ajax: function(options) {
+			if (!support)
 				throw new Error('your code must include $.ajax');
 			//处理配置信息
-			+options.timeout === options.timeout || 
-				(options.timeout = config.ajaxTimeout );
-			options.dataType || 
-				(options.dataType = config.ajaxDataType );
+			+ options.timeout === options.timeout ||
+				(options.timeout = config.ajaxTimeout);
+			options.dataType ||
+				(options.dataType = config.ajaxDataType);
 			typeof options.cache === 'undefined' &&
 				(options.cache = config.ajaxCache);
-			typeof options.cacheFilter ==='undefined'  && 
+			typeof options.cacheFilter === 'undefined' &&
 				(options.cacheFilter = config.ajaxCacheFilter);
 			options.cacheHash ||
 				(options.cacheHash = config.ajaxCacheHash);
 			return ajax(options);
 		},
-		get: function(/* url, data, success, dataType */){
+		get: function( /* url, data, success, dataType */ ) {
 			var options = parseArguments.apply(null, arguments);
 			options.type = 'GET';
 			return http.ajax(options);
 		},
-		post: function(/* url, data, success, dataType */){
+		post: function( /* url, data, success, dataType */ ) {
 			var options = parseArguments.apply(null, arguments);
-    		options.type = 'POST';
+			options.type = 'POST';
 			return http.ajax(options);
 		}
 	};

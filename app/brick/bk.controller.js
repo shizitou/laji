@@ -1,7 +1,7 @@
 //负责业务模块的管理和控制
-define('$controller',['$config','$template'],function(require,exports){
+define('$controller', ['$config', '$template'], function(require, exports) {
     'use strict';
-	var win = window,
+    var win = window,
         doc = win.document,
         config = require('$config'),
         template = require('$template'),
@@ -17,7 +17,7 @@ define('$controller',['$config','$template'],function(require,exports){
         loadingDOM,
         loadingDelay,
         //页面的宽度和高度
-        winH,winW,
+        winH, winW,
         //时间控制器
         loadingControl,
         controlMod,
@@ -29,7 +29,7 @@ define('$controller',['$config','$template'],function(require,exports){
     }
 
     //页面模块
-    function pageModule(pageId){
+    function pageModule(pageId) {
         //标志模块是否被加载完毕
         this.status = pageStatus.UNLOAD;
         //模块ID的标示
@@ -45,7 +45,7 @@ define('$controller',['$config','$template'],function(require,exports){
     };
     pageModule.prototype = {
         //加载完毕后初始化自身的模块
-        init: function(){
+        init: function() {
             //先将页面主模块嵌入到rootView中
             var self = this,
                 exports = self.exports,
@@ -60,8 +60,8 @@ define('$controller',['$config','$template'],function(require,exports){
             }
             //这里主要是对页面级别的对象进行处理
             if (mainElem) {
-                if(typeof mainElem==='object'){
-                    mainElem = '#'+(mainElem[0] ? mainElem[0].id : mainElem.id );
+                if (typeof mainElem === 'object') {
+                    mainElem = '#' + (mainElem[0] ? mainElem[0].id : mainElem.id);
                 }
                 mainElem = self.el = doc.getElementById(mainElem.substr(1));
                 exports.el = window.$ && $.fn ? $(mainElem) : mainElem;
@@ -71,86 +71,86 @@ define('$controller',['$config','$template'],function(require,exports){
             self.status = pageStatus.INITED;
             exports.init && exports.init(self.params);
         },
-        appendView: function(){
+        appendView: function() {
             var self = this;
-            if(!self.viewStatus){
+            if (!self.viewStatus) {
                 self.viewStatus = true;
-                rootView.children.length ? 
+                rootView.children.length ?
                     rootView.insertBefore(self.pageView, rootView.children[0]) :
                     rootView.appendChild(self.pageView);
             }
         },
         //scTop: Number,true,undefined
-        setScroll: function(scTop){
+        setScroll: function(scTop) {
             var selfTop = this.scrollTop;
             //系统级别调用
-            if(scTop===true){
-                selfTop = this.notRecoveryTop ? 1 : selfTop ;
+            if (scTop === true) {
+                selfTop = this.notRecoveryTop ? 1 : selfTop;
                 this.notRecoveryTop = false;
-            //用户触发
-            }else{
-                selfTop = scTop===undefined ? selfTop : 1 ;
+                //用户触发
+            } else {
+                selfTop = scTop === undefined ? selfTop : 1;
             }
             selfTop || (selfTop = 1);
             //需要与DOM渲染的线程错开滞后执行
-            setTimeout(function(){
+            setTimeout(function() {
                 win.scrollTo(0, selfTop);
-            },4);
+            }, 4);
         },
-        saveScroll: function(){
+        saveScroll: function() {
             this.scrollTop = win.pageYOffset || win.scrollY || 1;
         }
     };
 
-	function Controller(){
-		//当前页面成功加载后,存放前一个页面控制器
-		this.prevPage = undefined;
-		this.runningPage = undefined;
-	}
-	//供页面控制器使用的内置方法
-	Controller.builtIn = {
+    function Controller() {
+        //当前页面成功加载后,存放前一个页面控制器
+        this.prevPage = undefined;
+        this.runningPage = undefined;
+    }
+    //供页面控制器使用的内置方法
+    Controller.builtIn = {
         //清除当前页面模块
-        __cleanCache: function(){
+        __cleanCache: function() {
             this.__pageModule.status = pageStatus.LOADED;
         },
-		//离开页面时, 将自身页面scrollTop清除
-		__cleanScrollTop: function(){
+        //离开页面时, 将自身页面scrollTop清除
+        __cleanScrollTop: function() {
             this.__pageModule.notRecoveryTop = true;
         },
         //设置页面的scrollTop,如果不传递参数,就用上一次保存的
-        __setScrollTop: function(scTop){
+        __setScrollTop: function(scTop) {
             this.__pageModule.setScroll(scTop);
         },
-        __hideLoading: function(){
+        __hideLoading: function() {
             //触发时必须是当前运行的模块时,才可以触发
-            if(controlMod.runningPage === this.__pageModule){
+            if (controlMod.runningPage === this.__pageModule) {
                 loadingControl && clearTimeout(loadingControl);
                 loadingDOM && viewUtil.hide(loadingDOM);
             }
         },
-        __loading: function(){
+        __loading: function() {
             controlMod.loading();
         }
-	};
-	Controller.prototype = {
-		constructor: Controller,
-        init: function(){
+    };
+    Controller.prototype = {
+        constructor: Controller,
+        init: function() {
             rootView = config.rootView || doc.body;
             loadingDOM = config.loading || null;
-            if(!loadingDOM) return ;
+            if (!loadingDOM) return;
             winW = win.innerWidth;
             winH = win.innerHeight;
             loadingDelay = config.loadingDelay || 1;
             //初始化样式
-            viewUtil.css(loadingDOM,'position','fixed');
+            viewUtil.css(loadingDOM, 'position', 'fixed');
             var that = this;
-            win.addEventListener('resize', function(){
+            win.addEventListener('resize', function() {
                 winW = win.innerWidth;
                 winH = win.innerHeight;
                 that.setLoadingEl();
             }, false);
         },
-		firePageControl: function(page,params,options){
+        firePageControl: function(page, params, options) {
             //这里应当引发loading操作
             var pageModule = this.getPageMod(page);
             pageModule.options = options;
@@ -158,33 +158,33 @@ define('$controller',['$config','$template'],function(require,exports){
             this.loading();
             pageModule.status > pageStatus.LOADED ?
                 this.execPage(pageModule) :
-                this.loadPage(pageModule) ;
-		},
-        getPageMod: function(page){
+                this.loadPage(pageModule);
+        },
+        getPageMod: function(page) {
             return pageModuleCache[page] || (pageModuleCache[page] = new pageModule(page));
         },
         //启动跳转页面时的提示窗
-        loading: function(){
-            if(!loadingDOM) return;
+        loading: function() {
+            if (!loadingDOM) return;
             loadingControl && clearTimeout(loadingControl);
             var that = this;
-            loadingControl = setTimeout(function(){
+            loadingControl = setTimeout(function() {
                 that.showLoading();
-            },loadingDelay);
+            }, loadingDelay);
         },
-        showLoading: function(){
+        showLoading: function() {
             //计算显示位置
             viewUtil.show(loadingDOM);
             this.setLoadingEl();
         },
-        setLoadingEl: function(){
+        setLoadingEl: function() {
             var load = loadingDOM;
             viewUtil.
-                css(load,'left',Math.ceil((winW - load.offsetWidth)/2)+'px').
-                css(load,'top',Math.ceil((winH - load.offsetHeight)/2)+'px');
+            css(load, 'left', Math.ceil((winW - load.offsetWidth) / 2) + 'px').
+            css(load, 'top', Math.ceil((winH - load.offsetHeight) / 2) + 'px');
         },
         //执行跳转
-        execPage: function(pageModule){
+        execPage: function(pageModule) {
             var pageExports = pageModule.exports,
                 pageView = pageModule.pageView,
                 prevModule = this.runningPage,
@@ -195,15 +195,15 @@ define('$controller',['$config','$template'],function(require,exports){
             this.runningPage = pageModule;
 
             //解决当前显示中的模块离开
-            if(prevModule){
+            if (prevModule) {
                 prevExports = prevModule.exports;
                 this.prevPage = prevModule;
                 //这里的参数: 执行离开的模块的参数,当前显示的模块的参数 ,pageModule.params
                 prevExports.leave && prevExports.leave(prevModule.params);
-                BK.trigger('afterLeave',[pageModule.params]);
+                BK.trigger('afterLeave', [pageModule.params]);
                 prevModule.saveScroll();
                 prevView = prevModule.pageView
-                if( prevView )
+                if (prevView)
                     prevView.parentNode.removeChild(prevView),
                     prevModule.viewStatus = false;
             }
@@ -212,48 +212,48 @@ define('$controller',['$config','$template'],function(require,exports){
             pageModule.status > pageStatus.LOADED ?
                 pageModule.appendView() :
                 pageModule.init();
-            
-            BK.trigger('beforeEnter',[pageModule.params]);
+
+            BK.trigger('beforeEnter', [pageModule.params]);
             //参数：当前模块的参数,上一个模块的参数 ,prevModule.params
             pageExports.enter && pageExports.enter(pageModule.params);
-            
+
             //前一个页面移除完毕后设置当前模块缓存住的y轴
             //如果此跳转是来自用户从页面点击进入的,则不设置y轴
             //如果是由浏览器或history引发的页面变更,则恢复y轴 
             pageModule.options.formUser || pageModule.setScroll(true);
         },
         //加载页面模块
-        loadPage: function(pageModule){
+        loadPage: function(pageModule) {
             var that = this;
-            require.async(pageModule.pageID,function(module){
+            require.async(pageModule.pageID, function(module) {
                 //将请求的模块进行保存
-                if(module){
+                if (module) {
                     BK.extend(module, Controller.builtIn);
                     module.__pageModule = pageModule;
                     pageModule.exports = module;
                     pageModule.status = pageStatus.LOADED;
                     that.execPage(pageModule);
-                //网络问题,请求失败,可以提示用户刷新页面
-                }else{
-                    BK.trigger('loadFail',[pageModule.pageID]);
+                    //网络问题,请求失败,可以提示用户刷新页面
+                } else {
+                    BK.trigger('loadFail', [pageModule.pageID]);
                     pageModuleCache[pageModule.pageID] = null;
                 }
             });
         }
-	};
+    };
     controlMod = new Controller;
 
     viewUtil = {
-        css: function(el,key,val){
+        css: function(el, key, val) {
             el['style'][key] = val;
             return this;
         },
-        show: function(el){
-            return this.css(el,'display','block');
+        show: function(el) {
+            return this.css(el, 'display', 'block');
         },
-        hide: function(el){
-            this.css(el,'display','none');
+        hide: function(el) {
+            this.css(el, 'display', 'none');
         }
     };
-	return controlMod;
+    return controlMod;
 });

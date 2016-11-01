@@ -1,5 +1,5 @@
 define('comp-datahead2',function (require, exports, module) {
-  module.exports = require('$Compenent')('comp-datahead2',{
+  module.exports = require('$component')('comp-datahead2',{
     tpl: '<header><%= title %></header>',
     css: 'header{\
     		height:30px;\

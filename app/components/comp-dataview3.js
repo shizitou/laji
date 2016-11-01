@@ -1,6 +1,6 @@
 define('comp-dataview3',function (require, exports, module) {
 	require('comp-datahead');require('comp-datalist2');
-	module.exports = require('$Compenent')('comp-dataview3',{
+	module.exports = require('$component')('comp-dataview3',{
 		tpl: '<div class="cp-datalist">\
 				<%= $require("comp-datahead") %>\
 				<div class="cp-dl-desc"><%- desc %></div>\

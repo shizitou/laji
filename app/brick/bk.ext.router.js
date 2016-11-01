@@ -1,5 +1,5 @@
 //负责解析hash，监听hash的改变
-define('$router', ['$controller','$util', '$config'], function(require) {
+define('$router', ['$controller', '$util', '$config'], function(require) {
 	'use strict';
 	var config = require('$config'),
 		control = require('$controller'),
@@ -7,7 +7,7 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		util = utilMod.collection,
 		//是否支持h5的state事件啊
 		monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange';
-	
+
 	function Router() {};
 	var proto = {
 		start: function() {
@@ -51,19 +51,19 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			};
 			Router.fromUser = undefined;
 			var con = this.parseHash(hash);
-			control.firePageControl(con[0],con[1],option);
+			control.firePageControl(con[0], con[1], option);
 		},
-		parseHash: function(hash){
+		parseHash: function(hash) {
 			//返回 'ct.ac' 和 解析后的parse参数
 			var controller = '',
 				params = util.parseHash(hash);
-			if(params['ct']){
-				controller = params['ct']+(params['ac']||'');
-				delete params['ct'],delete params['ac'];
-			}else if(this.defControl){
+			if (params['ct']) {
+				controller = params['ct'] + (params['ac'] || '');
+				delete params['ct'], delete params['ac'];
+			} else if (this.defControl) {
 				controller = this.defControl;
 			}
-			return [controller,params];
+			return [controller, params];
 		}
 	};
 	Router.prototype = proto;
@@ -72,7 +72,7 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		Router.fromUser = true;
 		window.location.hash = '!/' + this.genPHash(page, params);
 	})
-		
+
 	//将收集到的util绑定到brick开放给外部
 	return new Router;
 });

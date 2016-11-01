@@ -1,4 +1,8 @@
 /*
+	version: 3.7.2
+		增强$http模块的cache功能：
+			识别 dataType:'json'
+	
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
 			define.reload('modId'[,successFun(require)][,failFun(require)]);
@@ -30,7 +34,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.1', 
+		version: '3.7.1',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -48,17 +52,17 @@
 	**/
 	var mounts = {
 		list: {},
-		add: function(node,fn){
-			this.list[node] = typeof fn === 'function' ? fn : null ;
+		add: function(node, fn) {
+			this.list[node] = typeof fn === 'function' ? fn : null;
 		},
-		remove: function(node){
+		remove: function(node) {
 			delete this.list[node];
 		},
-		dispatch: function(node,args/*array*/){
+		dispatch: function(node, args /*array*/ ) {
 			var handle = this.list[node];
-			if(handle && !handle.fire){
+			if (handle && !handle.fire) {
 				handle.fire = true;
-				var res = handle.apply(modCore,args);
+				var res = handle.apply(modCore, args);
 				handle.fire = false;
 				return res;
 			}
@@ -70,7 +74,7 @@
 	// 获取模块在配置中对应的别名
 	function parsePaths(id) {
 		var paths = coreConfig.paths;
-		return paths && type(paths[id])==='string' ? paths[id] : id;
+		return paths && type(paths[id]) === 'string' ? paths[id] : id;
 	}
 	var STATUS = {
 		// 0 - 刚刚被初始化
@@ -82,6 +86,7 @@
 		// 4 - 模块已经解析完毕
 		EXECUTED: 4
 	}
+
 	function define(id, deps, factory) {
 		//处理参数
 		var argsLen = arguments.length;
@@ -91,8 +96,8 @@
 			id = undefined
 		} else if (argsLen === 2) {
 			factory = deps
-			// define(deps, factory)
-			if (type(id)=== 'array') {
+				// define(deps, factory)
+			if (type(id) === 'array') {
 				deps = id
 				id = undefined
 			}
@@ -101,31 +106,31 @@
 				deps = [];
 			}
 		}
-		if(id){
+		if (id) {
 			var mod = Module.get(id);
 			// 当mod模块还未被保存的时候将其保存,
 			if (mod.status < STATUS.SAVED) {
 				mod.dependencies = deps || [];
 				mod.factory = factory;
 				mod.status = STATUS.SAVED;
-				mounts.dispatch('defined',[id,deps,factory]);
+				mounts.dispatch('defined', [id, deps, factory]);
 			}
 		}
 	};
-	define.redefine = function(factory){
+	define.redefine = function(factory) {
 		//将当前window的define函数上的静态方法，全部复制给新函数
 		var originDefine = global.define;
-		for(var n in originDefine){
+		for (var n in originDefine) {
 			factory[n] = originDefine[n];
 		}
 		factory['originDefine'] = originDefine;
 		global.define = factory;
 	};
-	define.mount = function(node,handle){
-		mounts.add(node,handle);
+	define.mount = function(node, handle) {
+		mounts.add(node, handle);
 		return this;
 	};
-	define.unmount = function(node){
+	define.unmount = function(node) {
 		mounts.remove(node);
 		return this;
 	};
@@ -134,17 +139,17 @@
 		var doc = document;
 		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 		var baseElement = head.getElementsByTagName("base")[0];
-		return function(ids,loaded) {
-			if(!ids.length){
-				setTimeout(loaded,4);
-				return ;
+		return function(ids, loaded) {
+			if (!ids.length) {
+				setTimeout(loaded, 4);
+				return;
 			}
-			var queryUrl = mounts.dispatch('genUrl',[ids]);
-			if(type(queryUrl)!=='string'){
+			var queryUrl = mounts.dispatch('genUrl', [ids]);
+			if (type(queryUrl) !== 'string') {
 				queryUrl = Module.genUrl(ids);
 			}
 			var node = doc.createElement("script");
-			var tid = setTimeout(function(){
+			var tid = setTimeout(function() {
 				clearTimeout(tid);
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
@@ -178,14 +183,14 @@
 			}
 		};
 	})();
-	define.reload = function (modId,success,fail) {
+	define.reload = function(modId, success, fail) {
 		//获取模块对象
 		var mod = Module.get(modId);
 		var oriStatus = mod.status;
 		//设置状态为初始化状态
 		mod.status = STATUS.INIT;
-		define.load([modId],function(status){
-			if(status === 'LOAD'){
+		define.load([modId], function(status) {
+			if (status === 'LOAD') {
 				success && success(require);
 			} else {
 				fail && fail(require);
@@ -194,10 +199,12 @@
 				}
 			}
 		});
+
 		function require(id) {
 			return Module.get(id).exec();
 		}
 	};
+
 	function Module(modId) {
 		this.id = modId;
 		// css,js
@@ -210,9 +217,9 @@
 		//模块的状态
 		this.status = STATUS.INIT;
 	}
-	Module.prototype.init = function(){
+	Module.prototype.init = function() {
 		//取出真实路径
-		this.fileType = fileType(parsePaths(this.id)) || 'js' ;
+		this.fileType = fileType(parsePaths(this.id)) || 'js';
 	};
 	//添加加载完毕后触发的操作列表
 	Module.prototype.onload = function(onload) {
@@ -227,21 +234,22 @@
 		if (mod.status >= STATUS.EXECUTING) {
 			return mod.exports
 		}
+
 		function require(id) {
 			return Module.get(id).exec();
 		}
 		require.async = function(ids, callback) {
-			modCore.use.apply(modCore, arguments);
-			return require;
-		}
-		//加载失败的时候
-		if(mod.factory===undefined){
+				modCore.use.apply(modCore, arguments);
+				return require;
+			}
+			//加载失败的时候
+		if (mod.factory === undefined) {
 			exports = undefined;
-		// Exec factory
-		}else{
+			// Exec factory
+		} else {
 			mod.status = STATUS.EXECUTING;
 			factory = mod.factory;
-			exports = type(factory)==='function' ?
+			exports = type(factory) === 'function' ?
 				factory(require, mod.exports = {}, mod) :
 				factory;
 			// 当模块体是函数时,将执行后赋值在模块exports的接口赋值给exports变量
@@ -257,44 +265,44 @@
 		return exports;
 	};
 	//加载完毕后来触发,这里需要解析自身模块的依赖关系到关系表中,并触发自身的回调
-	Module.prototype.load = function(){
+	Module.prototype.load = function() {
 		//当factory不为空时,解析自身parse
-		if(this.factory)
+		if (this.factory)
 			this.dependencies.length && this.parseDepend();
-		each(this.loaded, function(load){
+		each(this.loaded, function(load) {
 			load();
 		});
 	}
-	Module.prototype.parseDepend = function(){
-		// array
-		var depend = this.dependencies,
-			deplist = coreConfig.deplist,
-			self = this.id,
-			// string, array, null
-			selfDep = deplist[self],
-			depsLn,i;
-		if(!selfDep || type(selfDep)==='string'){
-			selfDep = deplist[self] = selfDep ? [selfDep] : [] ;
-		}
-		depsLn = selfDep.length;
-		each(depend,function(newDep){
-			var isSame = false;
-			for(i=0;i<depsLn;i++){
-				if(selfDep[i]===newDep){
-					isSame = true;
-					break;
+	Module.prototype.parseDepend = function() {
+			// array
+			var depend = this.dependencies,
+				deplist = coreConfig.deplist,
+				self = this.id,
+				// string, array, null
+				selfDep = deplist[self],
+				depsLn, i;
+			if (!selfDep || type(selfDep) === 'string') {
+				selfDep = deplist[self] = selfDep ? [selfDep] : [];
+			}
+			depsLn = selfDep.length;
+			each(depend, function(newDep) {
+				var isSame = false;
+				for (i = 0; i < depsLn; i++) {
+					if (selfDep[i] === newDep) {
+						isSame = true;
+						break;
+					}
 				}
-			}
-			if(!isSame){
-				deplistChange = true;
-				selfDep.push(newDep);
-			}
-		});
-	}
-	//获取模块,这里会进行缓存
+				if (!isSame) {
+					deplistChange = true;
+					selfDep.push(newDep);
+				}
+			});
+		}
+		//获取模块,这里会进行缓存
 	Module.get = function(modId) {
 		var module = moduleCache[modId]
-		if(!module){
+		if (!module) {
 			module = moduleCache[modId] = new Module(modId);
 			module.init();
 		}
@@ -318,9 +326,9 @@
 				fetchModules[waiting++] = module;
 			}
 		});
-		if( fetchModules.length ){
+		if (fetchModules.length) {
 			Module.fetch(fetchModules);
-		}else{
+		} else {
 			callback(depModules);
 		}
 	};
@@ -346,7 +354,7 @@
 				deps;
 			// []
 			if (deps = deplist[modId]) {
-				result = type(deps) === 'string' ? [deps] : deps ;
+				result = type(deps) === 'string' ? [deps] : deps;
 				for (var i = 0, j = deps.length; i < j; i++) {
 					result = result.concat(getDepsModule(deps[i]));
 				}
@@ -366,14 +374,14 @@
 			waitingLoad = [],
 			comboModels;
 		//过滤掉不需要加载(缓存||已经加载完毕)的模块
-		each(loadModules, function(mod,i) {
+		each(loadModules, function(mod, i) {
 			//此控件返回true的时候,不加载次模块
-			mounts.dispatch('fetchModuleFilter',[mod.id]) ?
+			mounts.dispatch('fetchModuleFilter', [mod.id]) ?
 				mod.load() :
 				waitingLoad.push(mod);
 		});
-		if(!waitingLoad.length)
-			return ;
+		if (!waitingLoad.length)
+			return;
 		//合并加载
 		if (config.combo) {
 			comboModels = {
@@ -385,41 +393,42 @@
 			});
 			fetch(comboModels['js']);
 			fetch(comboModels['css']);
-		//一般加载
+			//一般加载
 		} else {
-			each(waitingLoad,function(mod){
+			each(waitingLoad, function(mod) {
 				fetch([mod.id]);
 			});
 		}
+
 		function fetch(ids) {
-			define.load(ids.slice(0),function(){
-				each(ids, function(modId){
+			define.load(ids.slice(0), function() {
+				each(ids, function(modId) {
 					moduleCache[modId].load();
 				});
 			});
 		}
 	};
-	Module.genUrl = function (ids) {
-		var comboFun = coreConfig.combo;
-		var config = coreConfig;
-		var queryUrl;
-		if(comboFun && typeof comboFun==='function'){
-			queryUrl = comboFun.apply(config,[ids]);
-		}else{
-			queryUrl = config.baseUrl || '';
-			ids = parsePaths(ids[0]);
-       		if( fileType(ids) !== 'js' ){
-       			ids = ids + '.js';
-       		}
-       		queryUrl = ~queryUrl.indexOf('%s') ?
-       			queryUrl.replace('%s', ids) :
-       			queryUrl+ids;
-       		queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+	Module.genUrl = function(ids) {
+			var comboFun = coreConfig.combo;
+			var config = coreConfig;
+			var queryUrl;
+			if (comboFun && typeof comboFun === 'function') {
+				queryUrl = comboFun.apply(config, [ids]);
+			} else {
+				queryUrl = config.baseUrl || '';
+				ids = parsePaths(ids[0]);
+				if (fileType(ids) !== 'js') {
+					ids = ids + '.js';
+				}
+				queryUrl = ~queryUrl.indexOf('%s') ?
+					queryUrl.replace('%s', ids) :
+					queryUrl + ids;
+				queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+			}
+			return queryUrl;
 		}
-		return queryUrl;
-	}
-	/******* 对外接口 *******/
-	//配置
+		/******* 对外接口 *******/
+		//配置
 	modCore.config = function(obj) {
 		var options = coreConfig;
 		each(obj, function(value, key) {
@@ -432,36 +441,36 @@
 		});
 		// detect _debug=nocombo in location.search
 		if (/\b_debug=([\w,]+)\b/.test(location.search)) {
-			if(RegExp.$1.indexOf('nocombo'))
+			if (RegExp.$1.indexOf('nocombo'))
 				options.combo = false;
 		}
 		mounts.dispatch('config');
 	};
 	//使用模块 (mod1,mod2[,fn]); ([mod1,mod2],fn);
 	modCore.use = function() {
-		var needModulesId,callback;
-		needModulesId = [].concat.apply([],arguments);
-		callback = needModulesId[needModulesId.length-1];
+		var needModulesId, callback;
+		needModulesId = [].concat.apply([], arguments);
+		callback = needModulesId[needModulesId.length - 1];
 		callback = type(callback) === 'function' ?
 			needModulesId.pop() :
 			null;
 		Module.use(needModulesId, process);
 		//这里只是经过
-		function process(){
+		function process() {
 			/*
 				当经历过千山万苦在回到这里的时候,
 				早有的记忆可能已经改变,
 				无奈你需要重回起点，再次拾起那“遗失的记忆”
 			********/
-			if(deplistChange){
+			if (deplistChange) {
 				deplistChange = false;
 				Module.use(needModulesId, process);
-			}else{
+			} else {
 				finalHandle();
 			}
 		}
 		//最终走到这里
-		function finalHandle(){
+		function finalHandle() {
 			var exports = [];
 			each(needModulesId, function(moduleId, i) {
 				exports[i] = moduleCache[moduleId].exec();
@@ -470,25 +479,25 @@
 		}
 	};
 	//扩展属性
-	modCore.extend = function(obj,objExt){
-		if(objExt===undefined){
+	modCore.extend = function(obj, objExt) {
+		if (objExt === undefined) {
 			objExt = obj;
-			obj = this;	
+			obj = this;
 		}
-		for(var n in objExt){
-			if(objExt.hasOwnProperty(n) && !obj[n] ){
+		for (var n in objExt) {
+			if (objExt.hasOwnProperty(n) && !obj[n]) {
 				obj[n] = objExt[n];
 			}
 		}
 	};
-	modCore.require = function(id){
+	modCore.require = function(id) {
 		return Module.get(id).exec()
 	}
-	define('$insertCSS', function(){
-		return function(cssStr){
+	define('$insertCSS', function() {
+		return function(cssStr) {
 			var node = document.createElement('style');
- 	        node.appendChild(document.createTextNode(cssStr));
- 	        document.head.appendChild(node);
+			node.appendChild(document.createTextNode(cssStr));
+			document.head.appendChild(node);
 		};
 	});
 
@@ -497,7 +506,7 @@
 
 	/******* 工具函数 *******/
 	function each(obj, iterator, context) {
-		if(!obj) return ;
+		if (!obj) return;
 		var i, l, t = type(obj);
 		context = context || obj;
 		if (t === 'array') {
@@ -514,6 +523,7 @@
 			}
 		}
 	}
+
 	function type(obj) {
 		var t;
 		if (obj == null) {
@@ -525,6 +535,7 @@
 		return t;
 	}
 	var TYPE_RE = /\.(js|css)(?=[?&,]|$)/i;
+
 	function fileType(str) {
 		var ext;
 		str.replace(TYPE_RE, function(m, $1) {

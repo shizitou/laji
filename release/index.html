@@ -18,6 +18,10 @@
 <script>
 	/* 载入框架 */
 	/*
+	version: 3.7.2
+		增强$http模块的cache功能：
+			识别 dataType:'json'
+	
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
 			define.reload('modId'[,successFun(require)][,failFun(require)]);
@@ -49,7 +53,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.1', 
+		version: '3.7.1',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -67,17 +71,17 @@
 	**/
 	var mounts = {
 		list: {},
-		add: function(node,fn){
-			this.list[node] = typeof fn === 'function' ? fn : null ;
+		add: function(node, fn) {
+			this.list[node] = typeof fn === 'function' ? fn : null;
 		},
-		remove: function(node){
+		remove: function(node) {
 			delete this.list[node];
 		},
-		dispatch: function(node,args/*array*/){
+		dispatch: function(node, args /*array*/ ) {
 			var handle = this.list[node];
-			if(handle && !handle.fire){
+			if (handle && !handle.fire) {
 				handle.fire = true;
-				var res = handle.apply(modCore,args);
+				var res = handle.apply(modCore, args);
 				handle.fire = false;
 				return res;
 			}
@@ -89,7 +93,7 @@
 	// 获取模块在配置中对应的别名
 	function parsePaths(id) {
 		var paths = coreConfig.paths;
-		return paths && type(paths[id])==='string' ? paths[id] : id;
+		return paths && type(paths[id]) === 'string' ? paths[id] : id;
 	}
 	var STATUS = {
 		// 0 - 刚刚被初始化
@@ -101,6 +105,7 @@
 		// 4 - 模块已经解析完毕
 		EXECUTED: 4
 	}
+
 	function define(id, deps, factory) {
 		//处理参数
 		var argsLen = arguments.length;
@@ -110,8 +115,8 @@
 			id = undefined
 		} else if (argsLen === 2) {
 			factory = deps
-			// define(deps, factory)
-			if (type(id)=== 'array') {
+				// define(deps, factory)
+			if (type(id) === 'array') {
 				deps = id
 				id = undefined
 			}
@@ -120,31 +125,31 @@
 				deps = [];
 			}
 		}
-		if(id){
+		if (id) {
 			var mod = Module.get(id);
 			// 当mod模块还未被保存的时候将其保存,
 			if (mod.status < STATUS.SAVED) {
 				mod.dependencies = deps || [];
 				mod.factory = factory;
 				mod.status = STATUS.SAVED;
-				mounts.dispatch('defined',[id,deps,factory]);
+				mounts.dispatch('defined', [id, deps, factory]);
 			}
 		}
 	};
-	define.redefine = function(factory){
+	define.redefine = function(factory) {
 		//将当前window的define函数上的静态方法，全部复制给新函数
 		var originDefine = global.define;
-		for(var n in originDefine){
+		for (var n in originDefine) {
 			factory[n] = originDefine[n];
 		}
 		factory['originDefine'] = originDefine;
 		global.define = factory;
 	};
-	define.mount = function(node,handle){
-		mounts.add(node,handle);
+	define.mount = function(node, handle) {
+		mounts.add(node, handle);
 		return this;
 	};
-	define.unmount = function(node){
+	define.unmount = function(node) {
 		mounts.remove(node);
 		return this;
 	};
@@ -153,17 +158,17 @@
 		var doc = document;
 		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 		var baseElement = head.getElementsByTagName("base")[0];
-		return function(ids,loaded) {
-			if(!ids.length){
-				setTimeout(loaded,4);
-				return ;
+		return function(ids, loaded) {
+			if (!ids.length) {
+				setTimeout(loaded, 4);
+				return;
 			}
-			var queryUrl = mounts.dispatch('genUrl',[ids]);
-			if(type(queryUrl)!=='string'){
+			var queryUrl = mounts.dispatch('genUrl', [ids]);
+			if (type(queryUrl) !== 'string') {
 				queryUrl = Module.genUrl(ids);
 			}
 			var node = doc.createElement("script");
-			var tid = setTimeout(function(){
+			var tid = setTimeout(function() {
 				clearTimeout(tid);
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
@@ -197,14 +202,14 @@
 			}
 		};
 	})();
-	define.reload = function (modId,success,fail) {
+	define.reload = function(modId, success, fail) {
 		//获取模块对象
 		var mod = Module.get(modId);
 		var oriStatus = mod.status;
 		//设置状态为初始化状态
 		mod.status = STATUS.INIT;
-		define.load([modId],function(status){
-			if(status === 'LOAD'){
+		define.load([modId], function(status) {
+			if (status === 'LOAD') {
 				success && success(require);
 			} else {
 				fail && fail(require);
@@ -213,10 +218,12 @@
 				}
 			}
 		});
+
 		function require(id) {
 			return Module.get(id).exec();
 		}
 	};
+
 	function Module(modId) {
 		this.id = modId;
 		// css,js
@@ -229,9 +236,9 @@
 		//模块的状态
 		this.status = STATUS.INIT;
 	}
-	Module.prototype.init = function(){
+	Module.prototype.init = function() {
 		//取出真实路径
-		this.fileType = fileType(parsePaths(this.id)) || 'js' ;
+		this.fileType = fileType(parsePaths(this.id)) || 'js';
 	};
 	//添加加载完毕后触发的操作列表
 	Module.prototype.onload = function(onload) {
@@ -246,21 +253,22 @@
 		if (mod.status >= STATUS.EXECUTING) {
 			return mod.exports
 		}
+
 		function require(id) {
 			return Module.get(id).exec();
 		}
 		require.async = function(ids, callback) {
-			modCore.use.apply(modCore, arguments);
-			return require;
-		}
-		//加载失败的时候
-		if(mod.factory===undefined){
+				modCore.use.apply(modCore, arguments);
+				return require;
+			}
+			//加载失败的时候
+		if (mod.factory === undefined) {
 			exports = undefined;
-		// Exec factory
-		}else{
+			// Exec factory
+		} else {
 			mod.status = STATUS.EXECUTING;
 			factory = mod.factory;
-			exports = type(factory)==='function' ?
+			exports = type(factory) === 'function' ?
 				factory(require, mod.exports = {}, mod) :
 				factory;
 			// 当模块体是函数时,将执行后赋值在模块exports的接口赋值给exports变量
@@ -276,44 +284,44 @@
 		return exports;
 	};
 	//加载完毕后来触发,这里需要解析自身模块的依赖关系到关系表中,并触发自身的回调
-	Module.prototype.load = function(){
+	Module.prototype.load = function() {
 		//当factory不为空时,解析自身parse
-		if(this.factory)
+		if (this.factory)
 			this.dependencies.length && this.parseDepend();
-		each(this.loaded, function(load){
+		each(this.loaded, function(load) {
 			load();
 		});
 	}
-	Module.prototype.parseDepend = function(){
-		// array
-		var depend = this.dependencies,
-			deplist = coreConfig.deplist,
-			self = this.id,
-			// string, array, null
-			selfDep = deplist[self],
-			depsLn,i;
-		if(!selfDep || type(selfDep)==='string'){
-			selfDep = deplist[self] = selfDep ? [selfDep] : [] ;
-		}
-		depsLn = selfDep.length;
-		each(depend,function(newDep){
-			var isSame = false;
-			for(i=0;i<depsLn;i++){
-				if(selfDep[i]===newDep){
-					isSame = true;
-					break;
+	Module.prototype.parseDepend = function() {
+			// array
+			var depend = this.dependencies,
+				deplist = coreConfig.deplist,
+				self = this.id,
+				// string, array, null
+				selfDep = deplist[self],
+				depsLn, i;
+			if (!selfDep || type(selfDep) === 'string') {
+				selfDep = deplist[self] = selfDep ? [selfDep] : [];
+			}
+			depsLn = selfDep.length;
+			each(depend, function(newDep) {
+				var isSame = false;
+				for (i = 0; i < depsLn; i++) {
+					if (selfDep[i] === newDep) {
+						isSame = true;
+						break;
+					}
 				}
-			}
-			if(!isSame){
-				deplistChange = true;
-				selfDep.push(newDep);
-			}
-		});
-	}
-	//获取模块,这里会进行缓存
+				if (!isSame) {
+					deplistChange = true;
+					selfDep.push(newDep);
+				}
+			});
+		}
+		//获取模块,这里会进行缓存
 	Module.get = function(modId) {
 		var module = moduleCache[modId]
-		if(!module){
+		if (!module) {
 			module = moduleCache[modId] = new Module(modId);
 			module.init();
 		}
@@ -337,9 +345,9 @@
 				fetchModules[waiting++] = module;
 			}
 		});
-		if( fetchModules.length ){
+		if (fetchModules.length) {
 			Module.fetch(fetchModules);
-		}else{
+		} else {
 			callback(depModules);
 		}
 	};
@@ -365,7 +373,7 @@
 				deps;
 			// []
 			if (deps = deplist[modId]) {
-				result = type(deps) === 'string' ? [deps] : deps ;
+				result = type(deps) === 'string' ? [deps] : deps;
 				for (var i = 0, j = deps.length; i < j; i++) {
 					result = result.concat(getDepsModule(deps[i]));
 				}
@@ -385,14 +393,14 @@
 			waitingLoad = [],
 			comboModels;
 		//过滤掉不需要加载(缓存||已经加载完毕)的模块
-		each(loadModules, function(mod,i) {
+		each(loadModules, function(mod, i) {
 			//此控件返回true的时候,不加载次模块
-			mounts.dispatch('fetchModuleFilter',[mod.id]) ?
+			mounts.dispatch('fetchModuleFilter', [mod.id]) ?
 				mod.load() :
 				waitingLoad.push(mod);
 		});
-		if(!waitingLoad.length)
-			return ;
+		if (!waitingLoad.length)
+			return;
 		//合并加载
 		if (config.combo) {
 			comboModels = {
@@ -404,41 +412,42 @@
 			});
 			fetch(comboModels['js']);
 			fetch(comboModels['css']);
-		//一般加载
+			//一般加载
 		} else {
-			each(waitingLoad,function(mod){
+			each(waitingLoad, function(mod) {
 				fetch([mod.id]);
 			});
 		}
+
 		function fetch(ids) {
-			define.load(ids.slice(0),function(){
-				each(ids, function(modId){
+			define.load(ids.slice(0), function() {
+				each(ids, function(modId) {
 					moduleCache[modId].load();
 				});
 			});
 		}
 	};
-	Module.genUrl = function (ids) {
-		var comboFun = coreConfig.combo;
-		var config = coreConfig;
-		var queryUrl;
-		if(comboFun && typeof comboFun==='function'){
-			queryUrl = comboFun.apply(config,[ids]);
-		}else{
-			queryUrl = config.baseUrl || '';
-			ids = parsePaths(ids[0]);
-       		if( fileType(ids) !== 'js' ){
-       			ids = ids + '.js';
-       		}
-       		queryUrl = ~queryUrl.indexOf('%s') ?
-       			queryUrl.replace('%s', ids) :
-       			queryUrl+ids;
-       		queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+	Module.genUrl = function(ids) {
+			var comboFun = coreConfig.combo;
+			var config = coreConfig;
+			var queryUrl;
+			if (comboFun && typeof comboFun === 'function') {
+				queryUrl = comboFun.apply(config, [ids]);
+			} else {
+				queryUrl = config.baseUrl || '';
+				ids = parsePaths(ids[0]);
+				if (fileType(ids) !== 'js') {
+					ids = ids + '.js';
+				}
+				queryUrl = ~queryUrl.indexOf('%s') ?
+					queryUrl.replace('%s', ids) :
+					queryUrl + ids;
+				queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+			}
+			return queryUrl;
 		}
-		return queryUrl;
-	}
-	/******* 对外接口 *******/
-	//配置
+		/******* 对外接口 *******/
+		//配置
 	modCore.config = function(obj) {
 		var options = coreConfig;
 		each(obj, function(value, key) {
@@ -451,36 +460,36 @@
 		});
 		// detect _debug=nocombo in location.search
 		if (/\b_debug=([\w,]+)\b/.test(location.search)) {
-			if(RegExp.$1.indexOf('nocombo'))
+			if (RegExp.$1.indexOf('nocombo'))
 				options.combo = false;
 		}
 		mounts.dispatch('config');
 	};
 	//使用模块 (mod1,mod2[,fn]); ([mod1,mod2],fn);
 	modCore.use = function() {
-		var needModulesId,callback;
-		needModulesId = [].concat.apply([],arguments);
-		callback = needModulesId[needModulesId.length-1];
+		var needModulesId, callback;
+		needModulesId = [].concat.apply([], arguments);
+		callback = needModulesId[needModulesId.length - 1];
 		callback = type(callback) === 'function' ?
 			needModulesId.pop() :
 			null;
 		Module.use(needModulesId, process);
 		//这里只是经过
-		function process(){
+		function process() {
 			/*
 				当经历过千山万苦在回到这里的时候,
 				早有的记忆可能已经改变,
 				无奈你需要重回起点，再次拾起那“遗失的记忆”
 			********/
-			if(deplistChange){
+			if (deplistChange) {
 				deplistChange = false;
 				Module.use(needModulesId, process);
-			}else{
+			} else {
 				finalHandle();
 			}
 		}
 		//最终走到这里
-		function finalHandle(){
+		function finalHandle() {
 			var exports = [];
 			each(needModulesId, function(moduleId, i) {
 				exports[i] = moduleCache[moduleId].exec();
@@ -489,25 +498,25 @@
 		}
 	};
 	//扩展属性
-	modCore.extend = function(obj,objExt){
-		if(objExt===undefined){
+	modCore.extend = function(obj, objExt) {
+		if (objExt === undefined) {
 			objExt = obj;
-			obj = this;	
+			obj = this;
 		}
-		for(var n in objExt){
-			if(objExt.hasOwnProperty(n) && !obj[n] ){
+		for (var n in objExt) {
+			if (objExt.hasOwnProperty(n) && !obj[n]) {
 				obj[n] = objExt[n];
 			}
 		}
 	};
-	modCore.require = function(id){
+	modCore.require = function(id) {
 		return Module.get(id).exec()
 	}
-	define('$insertCSS', function(){
-		return function(cssStr){
+	define('$insertCSS', function() {
+		return function(cssStr) {
 			var node = document.createElement('style');
- 	        node.appendChild(document.createTextNode(cssStr));
- 	        document.head.appendChild(node);
+			node.appendChild(document.createTextNode(cssStr));
+			document.head.appendChild(node);
 		};
 	});
 
@@ -516,7 +525,7 @@
 
 	/******* 工具函数 *******/
 	function each(obj, iterator, context) {
-		if(!obj) return ;
+		if (!obj) return;
 		var i, l, t = type(obj);
 		context = context || obj;
 		if (t === 'array') {
@@ -533,6 +542,7 @@
 			}
 		}
 	}
+
 	function type(obj) {
 		var t;
 		if (obj == null) {
@@ -544,6 +554,7 @@
 		return t;
 	}
 	var TYPE_RE = /\.(js|css)(?=[?&,]|$)/i;
+
 	function fileType(str) {
 		var ext;
 		str.replace(TYPE_RE, function(m, $1) {
@@ -553,27 +564,29 @@
 	}
 })(this);;
 	/* module.ext.*系列一定要放到module.js之后 */
-	(function(define){
-	function clean(prefixKey){
+	(function(define) {
+	function clean(prefixKey) {
 		try {
-			for(var n in localStorage){
-				if(prefixKey){
+			for (var n in localStorage) {
+				if (prefixKey) {
 					~n.indexOf(prefixKey) &&
 						localStorage.removeItem(n);
-				}else{
+				} else {
 					localStorage.removeItem(n);
 				}
 			}
 		} catch (e) {}
 	}
-	define.mount('config',function(){
+	define.mount('config', function() {
 		var self = this;
 		var configs = self.configs;
-		if(!configs.cache){
-			return ;
+		if (!configs.cache) {
+			return;
 		}
-		self.config({ 'prefix': configs.prefix || '__BRICK__' });
-		var hashKey = configs.prefix+'HASH';
+		self.config({
+			'prefix': configs.prefix || '__BRICK__'
+		});
+		var hashKey = configs.prefix + 'HASH';
 		// detect localStorage support and activate cache ability
 
 		try {
@@ -581,19 +594,25 @@
 				clean(configs.prefix);
 				localStorage.setItem(hashKey, configs.hash);
 			}
-			self.config({ 'cache': true });
+			self.config({
+				'cache': true
+			});
 		} catch (e) {
-			self.config({ 'cache': false });
+			self.config({
+				'cache': false
+			});
 		}
 		// detect _debug=nocache in location.search
 		if (/\b_debug=([\w,]+)\b/.test(location.search)) {
-			if(RegExp.$1.indexOf('nocache')){
+			if (RegExp.$1.indexOf('nocache')) {
 				clean(configs.prefix);
-				self.config({ 'cache': false });
+				self.config({
+					'cache': false
+				});
 			}
 		}
 		define.unmount('config');
-	}).mount('defined',function(id,deps,factory){
+	}).mount('defined', function(id, deps, factory) {
 		var self = this;
 		var configs = self.configs;
 		if (!configs.cache) {
@@ -604,33 +623,35 @@
 			try {
 				localStorage.setItem(configs.prefix + id, deps.join(',') + '@@' + factory.toString());
 			} catch (e) {
-				self.config({ cache: false });
+				self.config({
+					cache: false
+				});
 			}
 		}
-	}).mount('fetchModuleFilter',function(id){
+	}).mount('fetchModuleFilter', function(id) {
 		var configs = this.configs;
 		if (!configs.cache)
 			return;
 		var raw, node, deps, factory,
 			doc = document;
-        raw = localStorage.getItem(configs.prefix + id);
-        if(raw){
-        	raw = raw.split('@@');
-        	factory = raw[1];
-        	//如果存储出现异常情况导致没有获取到内容,则这里不考虑
-        	if(factory){
-        		deps = raw[0];
-	        	deps = deps==="" ? false : deps.split(',') ;
-	        	deps = deps ? '["'+deps.join('","')+'"]' : '[]' ;
-	        	node = doc.createElement('script');
-	            node.appendChild(doc.createTextNode('define("'+id+'",'+deps+','+factory+');'));
-	            doc.head.appendChild(node);
-	            setTimeout(function(){
-	            	doc.head.removeChild(node);
-	            },4);
-	            return true;
-        	}
-        }
+		raw = localStorage.getItem(configs.prefix + id);
+		if (raw) {
+			raw = raw.split('@@');
+			factory = raw[1];
+			//如果存储出现异常情况导致没有获取到内容,则这里不考虑
+			if (factory) {
+				deps = raw[0];
+				deps = deps === "" ? false : deps.split(',');
+				deps = deps ? '["' + deps.join('","') + '"]' : '[]';
+				node = doc.createElement('script');
+				node.appendChild(doc.createTextNode('define("' + id + '",' + deps + ',' + factory + ');'));
+				doc.head.appendChild(node);
+				setTimeout(function() {
+					doc.head.removeChild(node);
+				}, 4);
+				return true;
+			}
+		}
 	});
 })(define);
 	/* __inline('./brick/module.ext.upbychar.js'); */
@@ -735,19 +756,19 @@
 	};
 	//解析search参数
 	util.parseSearch = function(search) {
-		search = search || location.search;
-		search = search.split('&');
-		var ln = search.length - 1,
-			option,
-			params = {},
-			de = decodeURIComponent;
-		for (; ln >= 0; ln--) {
-			option = search[ln];
-			params[option.split('=')[0]] = de(option.substr(option.indexOf('=') + 1));
+			search = search || location.search;
+			search = search.split('&');
+			var ln = search.length - 1,
+				option,
+				params = {},
+				de = decodeURIComponent;
+			for (; ln >= 0; ln--) {
+				option = search[ln];
+				params[option.split('=')[0]] = de(option.substr(option.indexOf('=') + 1));
+			}
+			return params;
 		}
-		return params;
-	}
-	//command: 'push' || 'place'
+		//command: 'push' || 'place'
 	util.history = function(command, page, params) {
 		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
@@ -786,18 +807,17 @@
 		},
 		bindTo: function(object) {
 			var _util = util;
-			for(var n in _util){
-				if(_util.hasOwnProperty(n) && !object[n] ){
-					if(n.charAt(0)==='_')
+			for (var n in _util) {
+				if (_util.hasOwnProperty(n) && !object[n]) {
+					if (n.charAt(0) === '_')
 						continue;
 					object[n] = _util[n];
 				}
 			}
 		}
 	}
-});
-;
-	define('$config',function(){
+});;
+	define('$config', function() {
 	//这里都是框架默认的配置选项
 	return {
 		//默认控制器: 'ctac'
@@ -813,16 +833,17 @@
 		//ajax默认数据类型
 		ajaxDataType: 'json',
 		ajaxCache: false,
-		ajaxCacheFilter: function(res){ return !!res; },
+		ajaxCacheFilter: function(res) {
+			return !!res;
+		},
 		ajaxCacheHash: ''
 	};
-});
-;
+});;
 	//模板引擎
-define('$Compenent',['$template'],function (require,exports,module) {
+define('$component', ['$template'], function(require, exports, module) {
     var $template = require('$template');
     var compsList = {};
-    var rep_style = /((?:[^\{\}\s]+\s*)+)(\{.*?\})/g;
+    var rep_style = /((?:[^\{\}\s]+\s*)+)(\{[\D\d]*?\})/g;
     var rep_nodeName = /^\s*<(\w+)/;
     var prefixId = 1;
     var style = document.createElement('style');
@@ -834,44 +855,63 @@ define('$Compenent',['$template'],function (require,exports,module) {
         '*': document.createElement('div')
     };
     document.head.appendChild(style);
-    function addStyle(css,prefixClass){
-        var lineCss,styleKey;
-        var result = "";
-        while(lineCss = rep_style.exec(css)){
-            styleKey = lineCss[1];
-            styleKey = styleKey.split(/,\s*/).map(function(cssStr){
-                return cssHandle(cssStr,'.'+prefixClass);
-            }).filter(function(cssStr){
-                return cssStr;
-            });
-            result += styleKey.join(',')+lineCss[2];
-        }
-        style.appendChild( document.createTextNode(result) );
+
+    function addStyle(css, prefixClass) {
+        css = css.replace(rep_style, function(all, key, val) {
+            key = key.trim();
+            all = key.charAt(0);
+            if (+all == all || all == '@' ||
+                key == 'from' || key == 'to') {} else {
+                key = cssHandle(key, '.' + prefixClass);
+            }
+            return key + val;
+        });
+        style.appendChild(document.createTextNode(css));
     }
+
     function cssHandle(styleKey, prefixClass) {
-        var mainKey;
         if (styleKey) {
-            styleKey = styleKey.split(/\s+/);
-            mainKey = styleKey.shift();
-            styleKey = styleKey.length ? ' ' + styleKey.join(' ') : '';
-            return mainKey + prefixClass + styleKey + ',' +
-                prefixClass + ' ' + mainKey + styleKey;
+            styleKey = styleKey.split(',');
+            styleKey.forEach(function(key, arrKey, arr) {
+                key = key.trim().split(/\s+/);
+                var main = key.shift();
+                var signPos = main.indexOf(':');
+                key = key.length ? ' ' + key.join(' ') : '';
+                if (~signPos) {
+                    key = main.slice(signPos) + ' ' + key;
+                    main = main.slice(0, signPos);
+                }
+                /*  .one:last-child .two
+                    .one.x:last-child .two,.x .one:last-child .two
+                **********/
+                arr[arrKey] = main + prefixClass + key + ',' +
+                    prefixClass + ' ' + main + key;
+            });
+            return styleKey.join(',');
         }
         return '';
     }
-    function addClassToRenView(origin,profixClass){
-        var nodeName,container;
+    /**
+    .pop-top.medal.bkcomps-2,
+    .bkcomps-2 .pop-top.medal.pop-top.medal.bkcomps-2,
+    .bkcomps-2 .pop-top.medal,
+    .pop-top.draw.bkcomps-2,
+    .bkcomps-2 .pop-top.draw.pop-top.draw.bkcomps-2,
+    .bkcomps-2 .pop-top.draw
+    **/
+    function addClassToRenView(origin, profixClass) {
+        var nodeName, container;
         nodeName = origin.match(rep_nodeName);
         nodeName = nodeName && nodeName[1];
         container = containers[nodeName] || containers['*'];
         container.innerHTML = origin;
         origin = container.children;
-        for(var i=origin.length-1;i>=0;i--){
-            origin[i].className = origin[i].className+' '+profixClass;
+        for (var i = origin.length - 1; i >= 0; i--) {
+            origin[i].className = origin[i].className + ' ' + profixClass;
         }
         return container.innerHTML;
     }
-    module.exports = function (compId,compObj) {
+    module.exports = function(compId, compObj) { // .a => index .a,.a.index {} class=" index"
         compObj.complie = $template(compObj.tpl);
         compsList[compId] = {
             resource: compObj,
@@ -885,7 +925,7 @@ define('$Compenent',['$template'],function (require,exports,module) {
             //处理css到页面当中
             if (compResObj.css && !compStyle) {
                 compObj.compStyle = compStyle = 'bkcomps-' + prefixId++;
-                addStyle(compResObj.css, compStyle);
+                setTimeout(addStyle, 4, compResObj.css, compStyle);
             }
             return addClassToRenView(
                 compResObj.complie(data, context), compStyle
@@ -893,12 +933,12 @@ define('$Compenent',['$template'],function (require,exports,module) {
         };
     }
 });
-define('$template',[],function(require){
+define('$template', [], function(require) {
     //匹配模板标签
     var settings = {
-            evaluate    : /<%([\s\S]+?)%>/g,
-            interpolate : /<%=([\s\S]+?)%>/g,
-            escape      : /<%-([\s\S]+?)%>/g
+            evaluate: /<%([\s\S]+?)%>/g,
+            interpolate: /<%=([\s\S]+?)%>/g,
+            escape: /<%-([\s\S]+?)%>/g
         },
         //转意成实体,用于过滤html标签
         entityMap = {
@@ -909,11 +949,11 @@ define('$template',[],function(require){
             "'": '&#x27;'
         },
         //转意实体的调用方法,当遇到 <%- %> 时,调用
-        _escape = function (string) {
-            if (string == null) 
+        _escape = function(string) {
+            if (string == null)
                 return '';
-            return ('' + string).replace( /[&<>"']/g , function(match){
-                return entityMap[ match ];
+            return ('' + string).replace(/[&<>"']/g, function(match) {
+                return entityMap[match];
             });
         },
         //转意空格之类的字符
@@ -929,9 +969,9 @@ define('$template',[],function(require){
         },
         //解析模板标签的正则队列
         matcher = new RegExp([
-            ( settings.escape ).source,
-            ( settings.interpolate ).source,
-            ( settings.evaluate ).source
+            (settings.escape).source,
+            (settings.interpolate).source,
+            (settings.evaluate).source
         ].join('|') + '|$', 'g');
     return function(text, data, context) {
         //存放的是组合后的渲染函数
@@ -942,15 +982,15 @@ define('$template',[],function(require){
             source = "__p+='",
             tContext = this;
         //拼接各种形式的语句 => source
-        text.replace(matcher, function(match, escape, interpolate, evaluate, offset){
-            source += text.slice(index, offset).replace(escaper, function(match){ 
+        text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+            source += text.slice(index, offset).replace(escaper, function(match) {
                 return '\\' + escapes[match];
             });
-            if(escape)
+            if (escape)
                 source += "'+\n((__t=(" + escape + "))==null?'':_escape(__t))+\n'";
-            if(interpolate)
+            if (interpolate)
                 source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-            if(evaluate)
+            if (evaluate)
                 source += "';\n" + evaluate + "\n__p+='";
             index = offset + match.length;
             return match;
@@ -961,14 +1001,15 @@ define('$template',[],function(require){
             "print=function(){__p+=__j.call(arguments,'');};\n" +
             source + "return __p;\n";
         //这里可能会抛异常，请务必保持资源的合法性
-        compile = new Function('obj', '_escape', 
-            '$require', 
+        compile = new Function('obj', '_escape',
+            '$require',
             source
         );
         //当没有传入data时 返回的方法: 颗粒模式
-        return data===undefined ? render : render(data, context) ; 
-        function render(data, context){
-            function $require(compId, compData, compContext){
+        return data === undefined ? render : render(data, context);
+
+        function render(data, context) {
+            function $require(compId, compData, compContext) {
                 return require(compId)(compData || data, compContext || context);
             }
             context || (context = this === window ? tContext : this);
@@ -977,9 +1018,9 @@ define('$template',[],function(require){
     };
 });;
 	//负责业务模块的管理和控制
-define('$controller',['$config','$template'],function(require,exports){
+define('$controller', ['$config', '$template'], function(require, exports) {
     'use strict';
-	var win = window,
+    var win = window,
         doc = win.document,
         config = require('$config'),
         template = require('$template'),
@@ -995,7 +1036,7 @@ define('$controller',['$config','$template'],function(require,exports){
         loadingDOM,
         loadingDelay,
         //页面的宽度和高度
-        winH,winW,
+        winH, winW,
         //时间控制器
         loadingControl,
         controlMod,
@@ -1007,7 +1048,7 @@ define('$controller',['$config','$template'],function(require,exports){
     }
 
     //页面模块
-    function pageModule(pageId){
+    function pageModule(pageId) {
         //标志模块是否被加载完毕
         this.status = pageStatus.UNLOAD;
         //模块ID的标示
@@ -1023,7 +1064,7 @@ define('$controller',['$config','$template'],function(require,exports){
     };
     pageModule.prototype = {
         //加载完毕后初始化自身的模块
-        init: function(){
+        init: function() {
             //先将页面主模块嵌入到rootView中
             var self = this,
                 exports = self.exports,
@@ -1038,8 +1079,8 @@ define('$controller',['$config','$template'],function(require,exports){
             }
             //这里主要是对页面级别的对象进行处理
             if (mainElem) {
-                if(typeof mainElem==='object'){
-                    mainElem = '#'+(mainElem[0] ? mainElem[0].id : mainElem.id );
+                if (typeof mainElem === 'object') {
+                    mainElem = '#' + (mainElem[0] ? mainElem[0].id : mainElem.id);
                 }
                 mainElem = self.el = doc.getElementById(mainElem.substr(1));
                 exports.el = window.$ && $.fn ? $(mainElem) : mainElem;
@@ -1049,86 +1090,86 @@ define('$controller',['$config','$template'],function(require,exports){
             self.status = pageStatus.INITED;
             exports.init && exports.init(self.params);
         },
-        appendView: function(){
+        appendView: function() {
             var self = this;
-            if(!self.viewStatus){
+            if (!self.viewStatus) {
                 self.viewStatus = true;
-                rootView.children.length ? 
+                rootView.children.length ?
                     rootView.insertBefore(self.pageView, rootView.children[0]) :
                     rootView.appendChild(self.pageView);
             }
         },
         //scTop: Number,true,undefined
-        setScroll: function(scTop){
+        setScroll: function(scTop) {
             var selfTop = this.scrollTop;
             //系统级别调用
-            if(scTop===true){
-                selfTop = this.notRecoveryTop ? 1 : selfTop ;
+            if (scTop === true) {
+                selfTop = this.notRecoveryTop ? 1 : selfTop;
                 this.notRecoveryTop = false;
-            //用户触发
-            }else{
-                selfTop = scTop===undefined ? selfTop : 1 ;
+                //用户触发
+            } else {
+                selfTop = scTop === undefined ? selfTop : 1;
             }
             selfTop || (selfTop = 1);
             //需要与DOM渲染的线程错开滞后执行
-            setTimeout(function(){
+            setTimeout(function() {
                 win.scrollTo(0, selfTop);
-            },4);
+            }, 4);
         },
-        saveScroll: function(){
+        saveScroll: function() {
             this.scrollTop = win.pageYOffset || win.scrollY || 1;
         }
     };
 
-	function Controller(){
-		//当前页面成功加载后,存放前一个页面控制器
-		this.prevPage = undefined;
-		this.runningPage = undefined;
-	}
-	//供页面控制器使用的内置方法
-	Controller.builtIn = {
+    function Controller() {
+        //当前页面成功加载后,存放前一个页面控制器
+        this.prevPage = undefined;
+        this.runningPage = undefined;
+    }
+    //供页面控制器使用的内置方法
+    Controller.builtIn = {
         //清除当前页面模块
-        __cleanCache: function(){
+        __cleanCache: function() {
             this.__pageModule.status = pageStatus.LOADED;
         },
-		//离开页面时, 将自身页面scrollTop清除
-		__cleanScrollTop: function(){
+        //离开页面时, 将自身页面scrollTop清除
+        __cleanScrollTop: function() {
             this.__pageModule.notRecoveryTop = true;
         },
         //设置页面的scrollTop,如果不传递参数,就用上一次保存的
-        __setScrollTop: function(scTop){
+        __setScrollTop: function(scTop) {
             this.__pageModule.setScroll(scTop);
         },
-        __hideLoading: function(){
+        __hideLoading: function() {
             //触发时必须是当前运行的模块时,才可以触发
-            if(controlMod.runningPage === this.__pageModule){
+            if (controlMod.runningPage === this.__pageModule) {
                 loadingControl && clearTimeout(loadingControl);
                 loadingDOM && viewUtil.hide(loadingDOM);
             }
         },
-        __loading: function(){
+        __loading: function() {
             controlMod.loading();
         }
-	};
-	Controller.prototype = {
-		constructor: Controller,
-        init: function(){
+    };
+    Controller.prototype = {
+        constructor: Controller,
+        init: function() {
             rootView = config.rootView || doc.body;
             loadingDOM = config.loading || null;
-            if(!loadingDOM) return ;
+            if (!loadingDOM) return;
             winW = win.innerWidth;
             winH = win.innerHeight;
             loadingDelay = config.loadingDelay || 1;
             //初始化样式
-            viewUtil.css(loadingDOM,'position','fixed');
+            viewUtil.css(loadingDOM, 'position', 'fixed');
             var that = this;
-            win.addEventListener('resize', function(){
+            win.addEventListener('resize', function() {
                 winW = win.innerWidth;
                 winH = win.innerHeight;
                 that.setLoadingEl();
             }, false);
         },
-		firePageControl: function(page,params,options){
+        firePageControl: function(page, params, options) {
             //这里应当引发loading操作
             var pageModule = this.getPageMod(page);
             pageModule.options = options;
@@ -1136,33 +1177,33 @@ define('$controller',['$config','$template'],function(require,exports){
             this.loading();
             pageModule.status > pageStatus.LOADED ?
                 this.execPage(pageModule) :
-                this.loadPage(pageModule) ;
-		},
-        getPageMod: function(page){
+                this.loadPage(pageModule);
+        },
+        getPageMod: function(page) {
             return pageModuleCache[page] || (pageModuleCache[page] = new pageModule(page));
         },
         //启动跳转页面时的提示窗
-        loading: function(){
-            if(!loadingDOM) return;
+        loading: function() {
+            if (!loadingDOM) return;
             loadingControl && clearTimeout(loadingControl);
             var that = this;
-            loadingControl = setTimeout(function(){
+            loadingControl = setTimeout(function() {
                 that.showLoading();
-            },loadingDelay);
+            }, loadingDelay);
         },
-        showLoading: function(){
+        showLoading: function() {
             //计算显示位置
             viewUtil.show(loadingDOM);
             this.setLoadingEl();
         },
-        setLoadingEl: function(){
+        setLoadingEl: function() {
             var load = loadingDOM;
             viewUtil.
-                css(load,'left',Math.ceil((winW - load.offsetWidth)/2)+'px').
-                css(load,'top',Math.ceil((winH - load.offsetHeight)/2)+'px');
+            css(load, 'left', Math.ceil((winW - load.offsetWidth) / 2) + 'px').
+            css(load, 'top', Math.ceil((winH - load.offsetHeight) / 2) + 'px');
         },
         //执行跳转
-        execPage: function(pageModule){
+        execPage: function(pageModule) {
             var pageExports = pageModule.exports,
                 pageView = pageModule.pageView,
                 prevModule = this.runningPage,
@@ -1173,15 +1214,15 @@ define('$controller',['$config','$template'],function(require,exports){
             this.runningPage = pageModule;
 
             //解决当前显示中的模块离开
-            if(prevModule){
+            if (prevModule) {
                 prevExports = prevModule.exports;
                 this.prevPage = prevModule;
                 //这里的参数: 执行离开的模块的参数,当前显示的模块的参数 ,pageModule.params
                 prevExports.leave && prevExports.leave(prevModule.params);
-                BK.trigger('afterLeave',[pageModule.params]);
+                BK.trigger('afterLeave', [pageModule.params]);
                 prevModule.saveScroll();
                 prevView = prevModule.pageView
-                if( prevView )
+                if (prevView)
                     prevView.parentNode.removeChild(prevView),
                     prevModule.viewStatus = false;
             }
@@ -1190,53 +1231,53 @@ define('$controller',['$config','$template'],function(require,exports){
             pageModule.status > pageStatus.LOADED ?
                 pageModule.appendView() :
                 pageModule.init();
-            
-            BK.trigger('beforeEnter',[pageModule.params]);
+
+            BK.trigger('beforeEnter', [pageModule.params]);
             //参数：当前模块的参数,上一个模块的参数 ,prevModule.params
             pageExports.enter && pageExports.enter(pageModule.params);
-            
+
             //前一个页面移除完毕后设置当前模块缓存住的y轴
             //如果此跳转是来自用户从页面点击进入的,则不设置y轴
             //如果是由浏览器或history引发的页面变更,则恢复y轴 
             pageModule.options.formUser || pageModule.setScroll(true);
         },
         //加载页面模块
-        loadPage: function(pageModule){
+        loadPage: function(pageModule) {
             var that = this;
-            require.async(pageModule.pageID,function(module){
+            require.async(pageModule.pageID, function(module) {
                 //将请求的模块进行保存
-                if(module){
+                if (module) {
                     BK.extend(module, Controller.builtIn);
                     module.__pageModule = pageModule;
                     pageModule.exports = module;
                     pageModule.status = pageStatus.LOADED;
                     that.execPage(pageModule);
-                //网络问题,请求失败,可以提示用户刷新页面
-                }else{
-                    BK.trigger('loadFail',[pageModule.pageID]);
+                    //网络问题,请求失败,可以提示用户刷新页面
+                } else {
+                    BK.trigger('loadFail', [pageModule.pageID]);
                     pageModuleCache[pageModule.pageID] = null;
                 }
             });
         }
-	};
+    };
     controlMod = new Controller;
 
     viewUtil = {
-        css: function(el,key,val){
+        css: function(el, key, val) {
             el['style'][key] = val;
             return this;
         },
-        show: function(el){
-            return this.css(el,'display','block');
+        show: function(el) {
+            return this.css(el, 'display', 'block');
         },
-        hide: function(el){
-            this.css(el,'display','none');
+        hide: function(el) {
+            this.css(el, 'display', 'none');
         }
     };
-	return controlMod;
+    return controlMod;
 });;
 	//负责解析hash，监听hash的改变
-define('$router', ['$controller','$util', '$config'], function(require) {
+define('$router', ['$controller', '$util', '$config'], function(require) {
 	'use strict';
 	var config = require('$config'),
 		control = require('$controller'),
@@ -1244,7 +1285,7 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		util = utilMod.collection,
 		//是否支持h5的state事件啊
 		monitorMode = !!(window.onpopstate) ? 'popstate' : 'hashchange';
-	
+
 	function Router() {};
 	var proto = {
 		start: function() {
@@ -1288,19 +1329,19 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			};
 			Router.fromUser = undefined;
 			var con = this.parseHash(hash);
-			control.firePageControl(con[0],con[1],option);
+			control.firePageControl(con[0], con[1], option);
 		},
-		parseHash: function(hash){
+		parseHash: function(hash) {
 			//返回 'ct.ac' 和 解析后的parse参数
 			var controller = '',
 				params = util.parseHash(hash);
-			if(params['ct']){
-				controller = params['ct']+(params['ac']||'');
-				delete params['ct'],delete params['ac'];
-			}else if(this.defControl){
+			if (params['ct']) {
+				controller = params['ct'] + (params['ac'] || '');
+				delete params['ct'], delete params['ac'];
+			} else if (this.defControl) {
 				controller = this.defControl;
 			}
-			return [controller,params];
+			return [controller, params];
 		}
 	};
 	Router.prototype = proto;
@@ -1309,11 +1350,11 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		Router.fromUser = true;
 		window.location.hash = '!/' + this.genPHash(page, params);
 	})
-		
+
 	//将收集到的util绑定到brick开放给外部
 	return new Router;
 });; 
-	define('$DeferByPromise',function(){
+	define('$DeferByPromise', function() {
 	/**
 		这里是做了一个基于Promise的defer类，
 		但和$.Deferred还是有些区别：
@@ -1321,15 +1362,15 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 			$.Deferred(fn) 这里的fn将接受到原生Promise的两个触发方法
 		处理了fail队列触发时异常处理
 	*/
-	if(!window.Promise) return ;
-	
+	if (!window.Promise) return;
+
 	//为Promise实例绑定done,fail方法
-	Promise.prototype.done = function(){
+	Promise.prototype.done = function() {
 		var defer = this;
 		(function add(args) {
-			[].forEach.call(args,function(arg){
+			[].forEach.call(args, function(arg) {
 				if (typeof arg === "function") {
-					return defer.then(arg,function(){}); // ?? why ??
+					return defer.then(arg, function() {}); // ?? why ??
 				} else if (arg && arg.length && typeof arg !== 'string') {
 					add(arg)
 				}
@@ -1337,46 +1378,47 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 		})(arguments);
 		return this;
 	}
-	Promise.prototype.fail = function(){
-		var defer = this;
-		(function add(args) {
-			[].forEach.call(args,function(arg){
-				if (typeof arg === "function") {
-					return defer.then(null,arg);
-				} else if (arg && arg.length && typeof arg !== 'string') {
-					add(arg)
-				}
-			});
-		})(arguments);
-		return this;
-	}
-	//处理抛异常的情况
+	Promise.prototype.fail = function() {
+			var defer = this;
+			(function add(args) {
+				[].forEach.call(args, function(arg) {
+					if (typeof arg === "function") {
+						return defer.then(null, arg);
+					} else if (arg && arg.length && typeof arg !== 'string') {
+						add(arg)
+					}
+				});
+			})(arguments);
+			return this;
+		}
+		//处理抛异常的情况
 	Promise.prototype._then = Promise.prototype.then;
-	Promise.prototype.then = function(done,fail){
+	Promise.prototype.then = function(done, fail) {
 		var newPro = new Promise();
-		function handlerReturn(returned){
+
+		function handlerReturn(returned) {
 			returned instanceof Promise &&
 				returned.done(newPro.resolve).fail(newPro.reject)
 		}
-		this._then(function(res){
+		this._then(function(res) {
 			handlerReturn(done && done(res));
-		},function(res){
+		}, function(res) {
 			handlerReturn(fail && fail(res));
 		});
 		return newPro;
 	}
 	window._Promise = Promise;
 	//为Promise实例绑定resolve,reject方法
-	window.Promise = function(callback){
-		var res,rej;
-		var pro = new _Promise(function(resolve,reject){
-			res = function (res){
+	window.Promise = function(callback) {
+		var res, rej;
+		var pro = new _Promise(function(resolve, reject) {
+			res = function(res) {
 				resolve(res);
 			};
-			rej = function (res){
+			rej = function(res) {
 				reject(res);
 			};
-			callback && callback(res,rej);
+			callback && callback(res, rej);
 		});
 		pro.resolve = res;
 		pro.reject = rej;
@@ -1384,41 +1426,44 @@ define('$router', ['$controller','$util', '$config'], function(require) {
 	}
 	Promise.prototype = _Promise.prototype;
 });
-define('$dataCacheBySession',function(require){
+define('$dataCacheBySession', function(require) {
 	var hash = '';
-	var sessionStorage = window.sessionStorage || function(){};
-	function getItem(key){
-		try{
+	var sessionStorage = window.sessionStorage || function() {};
+
+	function getItem(key) {
+		try {
 			return sessionStorage.getItem(key);
-		}catch(_e){}
+		} catch (_e) {}
 	}
-	function setItem(key,val){
-		try{
-			this.sessionStorage.setItem(key,val);
-		}catch(_e){}
+
+	function setItem(key, val) {
+		try {
+			this.sessionStorage.setItem(key, val);
+		} catch (_e) {}
 	}
-	function getKey(queryUrl, type, data){
+
+	function getKey(queryUrl, type, data) {
 		var loc = location;
-		return hash+'|'+type.slice(0,1)+'|'+
-			normalize(loc.host+loc.pathname+'/'+queryUrl)+'|'+
+		return hash + '|' + type.slice(0, 1) + '|' +
+			normalize(loc.host + loc.pathname + '/' + queryUrl) + '|' +
 			joinData(data);
 	}
 	return {
-		setHash: function(h){
+		setHash: function(h) {
 			hash = h;
 		},
-		set: function (queryUrl, type, data, result) {
+		set: function(queryUrl, type, data, result) {
 			typeof result === 'string' || (result = JSON.stringify(result));
 			return setItem(getKey(queryUrl, type, data), result);
 		},
-		get: function (queryUrl, type, data) {
+		get: function(queryUrl, type, data) {
 			return getItem(getKey(queryUrl, type, data));
 		}
 	};
 	//路径处理，合理去除掉 ./ ../ //
-	function normalize(/*pathA[,pathB,pathC]*/) {
+	function normalize( /*pathA[,pathB,pathC]*/ ) {
 		var path = [];
-		var i,arg,parts;
+		var i, arg, parts;
 		for (i = 0; i < arguments.length; i++) {
 			arg = arguments[i];
 			arg && path.push(arg);
@@ -1448,31 +1493,33 @@ define('$dataCacheBySession',function(require){
 		}
 		return path.join('/');
 	}
-	function joinData(obj){
+
+	function joinData(obj) {
 		var resArr = [];
-		for(var n in obj){
-			resArr.push(''+n+obj[n]);
+		for (var n in obj) {
+			resArr.push('' + n + obj[n]);
 		}
 		return resArr.join('|');
 	}
 });
-define('$http',['$config'], function(require) {
+define('$http', ['$config'], function(require) {
 	//这里需要对zepto强化一些操作： then,when
 	var xhr = window.$ && $.ajax,
 		support = !!xhr,
 		config = require('$config'),
-		Deferred,sessionStore;
+		Deferred, sessionStore;
 	//屏蔽掉$上的ajaxAPI,让开发者强制使用$http模块
-	if(support){
-		Deferred = $ && $.Deferred ? 
+	if (support) {
+		Deferred = $ && $.Deferred ?
 			$.Deferred :
 			window.Promise ?
-				(require('$DeferByPromise'),Promise) : null ;
-		delete $.ajax,delete $.get,delete $.post;
+			(require('$DeferByPromise'), Promise) : null;
+		delete $.ajax, delete $.get, delete $.post;
 		sessionStore = require('$dataCacheBySession');
 	}
+
 	function parseArguments(url, data, success, dataType) {
-		if(typeof url === 'object') // {url:, data:, success:}
+		if (typeof url === 'object') // {url:, data:, success:}
 			return url;
 		if (typeof data === 'function') // 'url', func, 'json'
 			dataType = success, success = data, data = undefined;
@@ -1486,89 +1533,93 @@ define('$http',['$config'], function(require) {
 		}
 	}
 
-	function ajax(options){
+	function ajax(options) {
 		var result;
 		var url = options.url,
 			type = options.type,
 			data = options.data,
+			dataType = options.dataType,
 			success = options.success,
 			defer;
-		if(options.cache){
+		if (options.cache) {
 			sessionStore.setHash(options.cacheHash);
 			result = sessionStore.get(url, type, data);
-			if(result){
-				if(Deferred){
-					defer = new Deferred();
-					setTimeout(function(){ //保持异步
-						defer.resolve(result,'success');
-					},4);
-				}else{
-					success && setTimeout(success,4,result,'success');
-				}
+			//根据请求类型返回对应结果： json,text
+			if (result && dataType === 'json') {
+				try {
+					result = JSON.parse(result);
+				} catch (_e) {};
+			}
+			if (result) {
+				defer = Deferred ? new Deferred() : null;
+				setTimeout(function() {
+					success && setTimeout(success, 4, result, 'success');
+					defer && defer.resolve(result, 'success');
+				}, 4);
 				return defer;
 			}
 		}
+
 		//发送请求
 		return xhr({
 			url: url,
 			type: type,
 			data: data,
-			dataType: options.dataType,
+			dataType: dataType,
 			timeout: options.timeout,
 			cache: options.cache,
-			success: function (result) {
+			success: function(result) {
 				var pass;
-				if(options.cache){
+				if (options.cache) {
 					pass = typeof options.cacheFilter === 'function' ?
 						!!options.cacheFilter(result) : false;
 					pass && sessionStore.set(url, type, data, result);
 				}
 				success && success(result);
 			},
-			error: function (result) {
+			error: function(result) {
 				options.error && options.error(result);
 			}
 		});
 	}
 
 	var http = {
-		ajax: function(options){
-			if(!support)
+		ajax: function(options) {
+			if (!support)
 				throw new Error('your code must include $.ajax');
 			//处理配置信息
-			+options.timeout === options.timeout || 
-				(options.timeout = config.ajaxTimeout );
-			options.dataType || 
-				(options.dataType = config.ajaxDataType );
+			+ options.timeout === options.timeout ||
+				(options.timeout = config.ajaxTimeout);
+			options.dataType ||
+				(options.dataType = config.ajaxDataType);
 			typeof options.cache === 'undefined' &&
 				(options.cache = config.ajaxCache);
-			typeof options.cacheFilter ==='undefined'  && 
+			typeof options.cacheFilter === 'undefined' &&
 				(options.cacheFilter = config.ajaxCacheFilter);
 			options.cacheHash ||
 				(options.cacheHash = config.ajaxCacheHash);
 			return ajax(options);
 		},
-		get: function(/* url, data, success, dataType */){
+		get: function( /* url, data, success, dataType */ ) {
 			var options = parseArguments.apply(null, arguments);
 			options.type = 'GET';
 			return http.ajax(options);
 		},
-		post: function(/* url, data, success, dataType */){
+		post: function( /* url, data, success, dataType */ ) {
 			var options = parseArguments.apply(null, arguments);
-    		options.type = 'POST';
+			options.type = 'POST';
 			return http.ajax(options);
 		}
 	};
 	return http;
-});
-;
+});;
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
-	define('$brick',['$router','$config','$util','$controller'],function(require,exports,module){
+	define('$brick', ['$router', '$config', '$util', '$controller'], function(require, exports, module) {
 	'use strict';
 	var BK;
 	var originModule = window.module;
 	delete window.module;
-	var f = function(){};
+	var f = function() {};
 	f.prototype = originModule;
 	BK = window.BK = new f();
 
@@ -1576,70 +1627,71 @@ define('$http',['$config'], function(require) {
 	var routerMod = require('$router');
 	var controlMod = require('$controller');
 	var appConfigs = require('$config');
-	BK.config = function(options){
+	BK.config = function(options) {
 		//留下业务中需要的配置项,其他的交给模块加载器处理
 		var item;
-		for(var n in appConfigs){
+		for (var n in appConfigs) {
 			item = options[n];
-			if(typeof item!=='undefined'){
+			if (typeof item !== 'undefined') {
 				appConfigs[n] = item;
 				delete options[n];
 			}
 		}
 		originModule.config(options);
 	}
-	BK.start = function(options){
+	BK.start = function(options) {
 		options && this.config(options);
 		//将收集的API绑定给BK
 		utilMod.bindTo(BK);
-		if(routerMod){
+		if (routerMod) {
 			routerMod.start();
-		}else{
+		} else {
 			controlMod.init();
 			BK.trigger('afterRun');
 			var hashParam = BK.parseHash();
 			var controller = '';
-			if(hashParam['ct']){
-				controller = hashParam['ct']+(hashParam['ac']||'');
-				delete hashParam['ct'],delete hashParam['ac'];
-			}else if(this.defControl){
+			if (hashParam['ct']) {
+				controller = hashParam['ct'] + (hashParam['ac'] || '');
+				delete hashParam['ct'], delete hashParam['ac'];
+			} else if (this.defControl) {
 				controller = this.defControl;
 			}
-			controlMod.firePageControl(controller,hashParam,{});
+			controlMod.firePageControl(controller, hashParam, {});
 		}
 	};
-	BK.paths = function(paths){
+	BK.paths = function(paths) {
 		this.config({
 			paths: paths
 		});
 	};
-	BK.deplist = function(deplist){
+	BK.deplist = function(deplist) {
 		this.config({
 			deplist: deplist
 		});
 	};
 	var events = {};
 	//globalEvent是为了兼容旧代码的调用
-	BK.bind = BK.globalEvent = function(type,fn){
+	BK.bind = BK.globalEvent = function(type, fn) {
 		(events[type] || (events[type] = [])).push(fn);
 	};
-	BK.unbind = function(type,fn){
-		if(fn){
+	BK.unbind = function(type, fn) {
+		if (fn) {
 			var eventList = events[type];
-			eventList && eventList.forEach(function(item,index,events){
-				item===fn && events.splice(index,1);
+			eventList && eventList.forEach(function(item, index, events) {
+				item === fn && events.splice(index, 1);
 			});
-		}else{
+		} else {
 			events[type] = [];
 		}
 	};
-	BK.trigger = function(type,args){
-		var eventList = events[type],j;
+	BK.trigger = function(type, args) {
+		var eventList = events[type],
+			j;
 		args = args || [];
-		if(eventList){
-			if(j = eventList.length){
-				for(var i=0;i<j;i++){
-					eventList[i].apply(window,args);
+		if (eventList) {
+			if (j = eventList.length) {
+				for (var i = 0; i < j; i++) {
+					eventList[i].apply(window, args);
 				}
 			}
 		}

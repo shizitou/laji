@@ -1,4 +1,4 @@
-define('$config',function(){
+define('$config', function() {
 	//这里都是框架默认的配置选项
 	return {
 		//默认控制器: 'ctac'
@@ -14,7 +14,9 @@ define('$config',function(){
 		//ajax默认数据类型
 		ajaxDataType: 'json',
 		ajaxCache: false,
-		ajaxCacheFilter: function(res){ return !!res; },
+		ajaxCacheFilter: function(res) {
+			return !!res;
+		},
 		ajaxCacheHash: ''
 	};
 });
