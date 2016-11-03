@@ -195,10 +195,14 @@ define('$http', ['$config'], function(require) {
 				} catch (_e) {};
 			}
 			if (result) {
-				defer = Deferred ? new Deferred() : null;
+				if(Deferred){ //创建一个defer对象，将回调添加进去
+					defer = new Deferred();
+					success && defer.done(success);
+				}
 				setTimeout(function() {
-					success && setTimeout(success, 4, result, 'success');
-					defer && defer.resolve(result, 'success');
+					defer ?
+						defer.resolve(result, 'success') : 
+						success && success(result,'success') ;
 				}, 4);
 				return defer;
 			}

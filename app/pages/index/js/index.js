@@ -35,7 +35,7 @@ define('index', function(require) {
 			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
-			/* 测试 $http 模块的cache是否生效 *
+			/* 测试 $http 模块的cache是否生效 */
 			$http.ajax({
 				url: '/a/b/../c/../../ajax.test.js',
 				type: 'POST',
@@ -50,14 +50,14 @@ define('index', function(require) {
 				cacheHash: '',
 				dataType: 'text',
 				success: function(res,status){
-					// console.log('options: ',status,JSON.parse(res));
+					console.log('options.success: ',res);
 				},
 			}).done(function(res,status){
-				console.log(status,JSON.parse(res));
+				console.log('done: ',res);
 			});
 			//*/
 			
-			/* 测试重载方法是否好用 define.redefine & define.reload */
+			/* 测试重载方法是否好用 define.redefine & define.reload *
 			// define.redefine(function(modid,deps,factory){
 			// 	console.log('redefine 之后的函数');
 			// 	console.log('redefine:',modid,deps,factory);

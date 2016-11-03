@@ -37,8 +37,8 @@ define('$brick', ['$router', '$config', '$util', '$controller'], function(requir
 			if (hashParam['ct']) {
 				controller = hashParam['ct'] + (hashParam['ac'] || '');
 				delete hashParam['ct'], delete hashParam['ac'];
-			} else if (this.defControl) {
-				controller = this.defControl;
+			} else if (appConfigs.defController) {
+				controller = appConfigs.defController;
 			}
 			controlMod.firePageControl(controller, hashParam, {});
 		}

@@ -2,6 +2,7 @@
 	version: 3.7.2
 		增强$http模块的cache功能：
 			识别 dataType:'json'
+		UIcomponent的样式修正：针对一些特定的style进行处理
 	
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
