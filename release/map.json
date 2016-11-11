@@ -233,7 +233,8 @@
                 "comp-dataview",
                 "comp-dataview2",
                 "comp-dataview3",
-                "comp-dataview4"
+                "comp-dataview4",
+                "jquery"
             ]
         }
     },

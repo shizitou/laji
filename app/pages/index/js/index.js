@@ -4,6 +4,8 @@ define('index', function(require) {
 	var $http = require('$http');
 	require('comp-dataview');require('comp-dataview2');
 	require('comp-dataview3');require('comp-dataview4');
+	var jq = require('jquery');
+	console.log(jq);
 	return {
 		el: '#page_index',
 		pageView: __inline('../html/index.html'),
@@ -35,8 +37,10 @@ define('index', function(require) {
 			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
-			/* 测试 $http 模块的cache是否生效 */
-			$http.ajax({
+			//*/
+
+			/* 测试 $http 模块的cache是否生效 *
+			var xhr = $http.ajax({
 				url: '/a/b/../c/../../ajax.test.js',
 				type: 'POST',
 				data: {
@@ -55,6 +59,9 @@ define('index', function(require) {
 			}).done(function(res,status){
 				console.log('done: ',res);
 			});
+			setTimeout(function(){ xhr.done(function(res,status){
+				console.log('timeout-done: ',res);
+			}) },1000);
 			//*/
 			
 			/* 测试重载方法是否好用 define.redefine & define.reload *

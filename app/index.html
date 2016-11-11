@@ -20,7 +20,7 @@
 	__inline('./brick/module.js');
 	/* module.ext.*系列一定要放到module.js之后 */
 	__inline('./brick/module.ext.cache.js');
-	/* __inline('./brick/module.ext.upbychar.js'); */
+	// __inline('./brick/module.ext.upbychar.js'); 
 	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
 	__inline('./brick/bk.config.js');
@@ -38,6 +38,7 @@
 	BK.deplist({
 		'index': ['comp-dataview3','comp-dataview4',
 			'comp-dataview','comp-dataview2',
+			'jquery'
 		],
 		'comp-dataview': ['comp-datahead','comp-datalist'],
 		'comp-dataview2': ['comp-datahead2','comp-datalist'],
@@ -64,12 +65,16 @@ BK.config({
 	loading: document.querySelector('#js-global-loading'),
 	// cache: true,
 	hash: '3.0.2',
+	baseUrl: '/',
 	// combo: function (mods) {
-	// 	var baseUrl = 'http://www.baidu.com/js/combo.js??';
+	// 	var baseUrl = '/combo.js??';
 	// 	return baseUrl+mods.join('.js,')+'.js?t='+this.hash;
 	// },
-	ajaxCache: true,
-	ajaxCacheHash: '~~'
+	// ajaxCache: true,
+	// ajaxCacheHash: '~~',
+	paths: {
+		'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js',
+	}
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

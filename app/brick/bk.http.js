@@ -8,67 +8,56 @@ define('$DeferByPromise', function() {
 	*/
 	if (!window.Promise) return;
 
-	//为Promise实例绑定done,fail方法
-	Promise.prototype.done = function() {
-		var defer = this;
-		(function add(args) {
-			[].forEach.call(args, function(arg) {
-				if (typeof arg === "function") {
-					return defer.then(arg, function() {}); // ?? why ??
-				} else if (arg && arg.length && typeof arg !== 'string') {
-					add(arg)
-				}
-			});
-		})(arguments);
-		return this;
-	}
-	Promise.prototype.fail = function() {
-			var defer = this;
+	function Deferred() {
+		var self = this;
+		var _promise = new window.Promise(function(resolve, reject) {
+			self.resolve = function(data) {
+				resolve(data);
+			};
+			self.reject = function(data) {
+				reject(data);
+			};
+		});
+		self.done = function() {
 			(function add(args) {
 				[].forEach.call(args, function(arg) {
 					if (typeof arg === "function") {
-						return defer.then(null, arg);
+						return self.then(arg, function() {}); // ?? why ??
 					} else if (arg && arg.length && typeof arg !== 'string') {
 						add(arg)
 					}
 				});
 			})(arguments);
 			return this;
-		}
-		//处理抛异常的情况
-	Promise.prototype._then = Promise.prototype.then;
-	Promise.prototype.then = function(done, fail) {
-		var newPro = new Promise();
+		};
+		self.fail = function() {
+			(function fail(args) {
+				[].forEach.call(args, function(arg) {
+					if (typeof arg === "function") {
+						return self.then(null, arg);
+					} else if (arg && arg.length && typeof arg !== 'string') {
+						fail(arg)
+					}
+				});
+			})(arguments);
+			return this;
+		};
+		self.then = function(done, fail) {
+			var newPro = new Deferred();
 
-		function handlerReturn(returned) {
-			returned instanceof Promise &&
-				returned.done(newPro.resolve).fail(newPro.reject)
-		}
-		this._then(function(res) {
-			handlerReturn(done && done(res));
-		}, function(res) {
-			handlerReturn(fail && fail(res));
-		});
-		return newPro;
+			function handlerReturn(returned) {
+				returned instanceof Promise &&
+					returned.done(newPro.resolve).fail(newPro.reject)
+			}
+			_promise.then(function(data) {
+				handlerReturn(done && done(data));
+			}, function(data) {
+				handlerReturn(fail && fail(data));
+			});
+			return newPro;
+		};
 	}
-	window._Promise = Promise;
-	//为Promise实例绑定resolve,reject方法
-	window.Promise = function(callback) {
-		var res, rej;
-		var pro = new _Promise(function(resolve, reject) {
-			res = function(res) {
-				resolve(res);
-			};
-			rej = function(res) {
-				reject(res);
-			};
-			callback && callback(res, rej);
-		});
-		pro.resolve = res;
-		pro.reject = rej;
-		return pro;
-	}
-	Promise.prototype = _Promise.prototype;
+	return Deferred;
 });
 define('$dataCacheBySession', function(require) {
 	var hash = '';
@@ -156,8 +145,7 @@ define('$http', ['$config'], function(require) {
 	if (support) {
 		Deferred = $ && $.Deferred ?
 			$.Deferred :
-			window.Promise ?
-			(require('$DeferByPromise'), Promise) : null;
+			window.Promise ? require('$DeferByPromise') : null;
 		delete $.ajax, delete $.get, delete $.post;
 		sessionStore = require('$dataCacheBySession');
 	}
@@ -195,14 +183,14 @@ define('$http', ['$config'], function(require) {
 				} catch (_e) {};
 			}
 			if (result) {
-				if(Deferred){ //创建一个defer对象，将回调添加进去
+				if (Deferred) { //创建一个defer对象，将回调添加进去
 					defer = new Deferred();
 					success && defer.done(success);
 				}
 				setTimeout(function() {
 					defer ?
-						defer.resolve(result, 'success') : 
-						success && success(result,'success') ;
+						defer.resolve(result, 'success') :
+						success && success(result, 'success');
 				}, 4);
 				return defer;
 			}
@@ -230,7 +218,6 @@ define('$http', ['$config'], function(require) {
 			}
 		});
 	}
-
 	var http = {
 		ajax: function(options) {
 			if (!support)

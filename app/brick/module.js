@@ -1,4 +1,10 @@
 /*
+	version: 3.7.3
+		$http的$defer中不改写原生Promise
+		模块加载器支持绝对路径：
+			判定规则是以 http:// 或 https:// 开头的path
+			绝对路径的模块不进行处理url处理，也不会进入到genUrl挂载点
+
 	version: 3.7.2
 		增强$http模块的cache功能：
 			识别 dataType:'json'
@@ -35,7 +41,7 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.1',
+		version: '3.7.3',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
@@ -118,6 +124,7 @@
 			}
 		}
 	};
+	define.amd = {}; //为了让amd模块进行 define包装报错,比如 jquery
 	define.redefine = function(factory) {
 		//将当前window的define函数上的静态方法，全部复制给新函数
 		var originDefine = global.define;
@@ -136,26 +143,53 @@
 		return this;
 	};
 	//接收要加载模块的ID集合
-	define.load = (function() {
-		var doc = document;
-		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
-		var baseElement = head.getElementsByTagName("base")[0];
-		return function(ids, loaded) {
-			if (!ids.length) {
-				setTimeout(loaded, 4);
-				return;
+	define.load = function(ids, loaded) {
+		if (!ids.length) {
+			setTimeout(loaded, 4);
+			return;
+		}
+		/* 	过滤绝对地址的请求
+			如果是以 http:// https:// 开头的path，则不处理路由了，
+			直接进行加载
+		****/
+		var paths = coreConfig.paths;
+		var fetchUrl = [];
+		for (var i = ids.length - 1; i >= 0; i--) {
+			var path = paths[ids[i]];
+			if (/^(http:\/\/|https:\/\/)/.test(path)) {
+				fetchUrl.push(path);
+				ids.splice(i, 1)
 			}
+		}
+		//处理加载路径
+		if (ids.length) {
 			var queryUrl = mounts.dispatch('genUrl', [ids]);
 			if (type(queryUrl) !== 'string') {
 				queryUrl = Module.genUrl(ids);
 			}
+			fetchUrl.push(queryUrl);
+		}
+		/* 并发加载模块 */
+		var waiting = fetchUrl.length; //请求的url个数
+		fetchUrl.forEach(function(url) { //真正的请求地址
+			define.fetch(url, function(status) {
+				--waiting || loaded(status);
+			});
+		});
+	};
+	define.fetch = (function() {
+		var doc = document;
+		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
+		var baseElement = head.getElementsByTagName("base")[0];
+		return function(url, loaded) {
+			//使用js标签进行加载
 			var node = doc.createElement("script");
 			var tid = setTimeout(function() {
 				clearTimeout(tid);
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
 			node.async = true;
-			node.src = queryUrl;
+			node.src = url;
 			if ('onload' in node) {
 				node.onload = function() {
 					clearTimeout(tid);
@@ -392,8 +426,8 @@
 			each(waitingLoad, function(mod) {
 				comboModels[mod.fileType].push(mod.id);
 			});
-			fetch(comboModels['js']);
-			fetch(comboModels['css']);
+			comboModels['js'].length && fetch(comboModels['js']);
+			comboModels['css'].length && fetch(comboModels['css']);
 			//一般加载
 		} else {
 			each(waitingLoad, function(mod) {
@@ -402,7 +436,7 @@
 		}
 
 		function fetch(ids) {
-			define.load(ids.slice(0), function() {
+			define.load(ids.slice(0), function(s) {
 				each(ids, function(modId) {
 					moduleCache[modId].load();
 				});
@@ -410,29 +444,33 @@
 		}
 	};
 	Module.genUrl = function(ids) {
-			var comboFun = coreConfig.combo;
-			var config = coreConfig;
-			var queryUrl;
-			if (comboFun && typeof comboFun === 'function') {
-				queryUrl = comboFun.apply(config, [ids]);
-			} else {
-				queryUrl = config.baseUrl || '';
-				ids = parsePaths(ids[0]);
-				if (fileType(ids) !== 'js') {
-					ids = ids + '.js';
-				}
-				queryUrl = ~queryUrl.indexOf('%s') ?
-					queryUrl.replace('%s', ids) :
-					queryUrl + ids;
-				queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
+		var comboFun = coreConfig.combo;
+		var config = coreConfig;
+		var queryUrl;
+		if (comboFun && typeof comboFun === 'function') {
+			queryUrl = comboFun.apply(config, [ids]);
+		} else {
+			queryUrl = config.baseUrl || '';
+			ids = parsePaths(ids[0]);
+			if (fileType(ids) !== 'js') {
+				ids = ids + '.js';
 			}
-			return queryUrl;
+			queryUrl = ~queryUrl.indexOf('%s') ?
+				queryUrl.replace('%s', ids) :
+				queryUrl + ids;
+			queryUrl = queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + config.hash;
 		}
-		/******* 对外接口 *******/
-		//配置
+		return queryUrl;
+	}
+
+	/******* 对外接口 *******/
+	//配置
 	modCore.config = function(obj) {
 		var options = coreConfig;
 		each(obj, function(value, key) {
+			if (key === 'paths') { //对paths的设置项做特殊处理
+				return configPaths(value);
+			}
 			var t = type(value);
 			if (t === 'object' || t === 'array') {
 				//如果配置中初始化的就是对象的话
@@ -447,6 +485,13 @@
 		}
 		mounts.dispatch('config');
 	};
+
+	function configPaths(obj) { //{key: value}
+		var pathsCon = coreConfig.paths; // {}
+		each(obj, function(val, key) {
+			pathsCon[key] = val;
+		})
+	}
 	//使用模块 (mod1,mod2[,fn]); ([mod1,mod2],fn);
 	modCore.use = function() {
 		var needModulesId, callback;

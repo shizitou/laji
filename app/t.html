@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+	<title>Document</title>
+	<style>
+		#but{
+			width: 200px;
+			height: 100px;
+			background: red;
+		}
+	</style>
+</head>
+<body>
+	<div id="but"></div>
+	<p>touchend - touchstart：<span id="end-use-time"></span></p>
+	<p>click - touchstart：<span id="click-use-time"></span></p>
+</body>
+</html>
+<script>
+	var but = document.querySelector('#but');
+	var end = document.querySelector('#end-use-time');
+	var click = document.querySelector('#click-use-time');
+	var stime = 0;
+	var endUse = 0;
+	but.addEventListener('touchstart',function(){
+		stime = +new Date();
+	},false)
+	but.addEventListener('touchend',function(){
+		endUse = +new Date() - stime;
+	},false);
+	but.addEventListener('click',function(){
+		var use = +new Date() - stime;
+		click.innerText = use;
+		end.innerText = endUse;
+	},false);
+</script>
+<script type="text">
+	ios 8+  轻点时会有300ms延迟问题，重按时没有问题
+	uc  10+ 没有300ms延迟问题
+	bdu 7+  没有300ms延迟问题
+	qq  n+  没有300ms延迟问题
+
+	华为荣耀 touchend-53,click-110
+	努比亚 有问题
+
+</script>
