@@ -4,8 +4,7 @@ define('index', function(require) {
 	var $http = require('$http');
 	require('comp-dataview');require('comp-dataview2');
 	require('comp-dataview3');require('comp-dataview4');
-	var jq = require('jquery');
-	console.log(jq);
+	// var jq = require('jquery');
 	return {
 		el: '#page_index',
 		pageView: __inline('../html/index.html'),
@@ -38,6 +37,10 @@ define('index', function(require) {
 			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 			//*/
+			this.el[0].addEventListener('click',function(){
+				BK.link('shelf',{});
+			},false);
+			// console.log(FastClick);
 
 			/* 测试 $http 模块的cache是否生效 *
 			var xhr = $http.ajax({

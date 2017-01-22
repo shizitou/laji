@@ -5,6 +5,7 @@
 	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 	<title>Document</title>
 	<link rel="stylesheet" href="index.css" />
+	<script src="fastclick.js"></script>
 </head>
 <body>
 <div id="footer"> 
@@ -20,13 +21,13 @@
 	__inline('./brick/module.js');
 	/* module.ext.*系列一定要放到module.js之后 */
 	__inline('./brick/module.ext.cache.js');
-	// __inline('./brick/module.ext.upbychar.js'); 
+	__inline('./brick/module.ext.upbychar.js'); 
 	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
 	__inline('./brick/bk.config.js');
 	__inline('./brick/bk.template.js');
 	__inline('./brick/bk.controller.js');
-	// __inline('./brick/bk.ext.router.js'); 
+	__inline('./brick/bk.ext.router.js'); 
 	__inline('./brick/bk.http.js');
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	__inline('./brick/brick.js');
@@ -48,6 +49,7 @@
 	BK.paths({
 		'index': './pages/index/js/index.js',
 		'index.css': './pages/index/css/index.css',
+		'shelf': './pages/shelf/shelf.js',
 		'comp-dataview': './components/comp-dataview.js',
 		'comp-dataview2': './components/comp-dataview2.js',
 		'comp-dataview3': './components/comp-dataview3.js',

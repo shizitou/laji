@@ -95,12 +95,10 @@
 			return;
 		}
 
-		// Some old versions of Android don't have Function.prototype.bind
+		//绑定事件中的this指向
 		function bind(method, context) {
 			return function() { return method.apply(context, arguments); };
 		}
-
-
 		var methods = ['onMouse', 'onClick', 'onTouchStart', 'onTouchMove', 'onTouchEnd', 'onTouchCancel'];
 		var context = this;
 		for (var i = 0, l = methods.length; i < l; i++) {
@@ -114,6 +112,7 @@
 			layer.addEventListener('mouseup', this.onMouse, true);
 		}
 		//这些事件都被使用了 bind 将 this 指向到了 fastClick
+		//注意这里的事件用的是事件捕捉
 		layer.addEventListener('click', this.onClick, true);
 		layer.addEventListener('touchstart', this.onTouchStart, false);
 		layer.addEventListener('touchmove', this.onTouchMove, false);
@@ -228,7 +227,6 @@
 		return (/\bneedsclick\b/).test(target.className);
 	};
 
-
 	/**
 	 * Determine whether a given element requires a call to focus to simulate click into element.
 	 *
@@ -236,6 +234,7 @@
 	 * @returns {boolean} Returns true if the element requires a call to focus to simulate native click.
 	 */
 	FastClick.prototype.needsFocus = function(target) {
+		console.log('needsFocus');
 		switch (target.nodeName.toLowerCase()) {
 		case 'textarea':
 			return true;
@@ -259,17 +258,11 @@
 		}
 	};
 
-
-	/**
-	 * Send a click event to the specified element.
-	 *
-	 * @param {EventTarget|Element} targetElement
-	 * @param {Event} event
-	 */
+	//js触发一个点击事件
 	FastClick.prototype.sendClick = function(targetElement, event) {
+		console.log('send-click');
 		var clickEvent, touch;
 
-		// On some Android devices activeElement needs to be blurred otherwise the synthetic click will have no effect (#24)
 		if (document.activeElement && document.activeElement !== targetElement) {
 			document.activeElement.blur();
 		}
@@ -293,7 +286,6 @@
 		return 'click';
 	};
 
-
 	/**
 	 * @param {EventTarget|Element} targetElement
 	 */
@@ -309,19 +301,14 @@
 		}
 	};
 
-
 	/**
-	 * Check whether the given target element is a child of a scrollable layer and if so, set a flag on it.
-	 *
-	 * @param {EventTarget|Element} targetElement
+	 * 检查target是否一个滚动容器里的子元素，如果是则给它加个标记
 	 */
 	FastClick.prototype.updateScrollParent = function(targetElement) {
 		var scrollParent, parentElement;
-
 		scrollParent = targetElement.fastClickScrollParent;
 
-		// Attempt to discover whether the target element is contained within a scrollable layer. Re-check if the
-		// target element was moved to another parent.
+		// 找到一个可以滚动的父级元素
 		if (!scrollParent || !scrollParent.contains(targetElement)) {
 			parentElement = targetElement;
 			do {
@@ -335,17 +322,13 @@
 			} while (parentElement);
 		}
 
-		// Always update the scroll top tracker if possible.
+		// 给滚动容器加个标志fastClickLastScrollTop，值为其当前垂直滚动偏移
 		if (scrollParent) {
 			scrollParent.fastClickLastScrollTop = scrollParent.scrollTop;
 		}
 	};
 
-
-	/**
-	 * @param {EventTarget} targetElement
-	 * @returns {Element|EventTarget}
-	 */
+	//获取点中的元素节点
 	FastClick.prototype.getTargetElementFromEventTarget = function(eventTarget) {
 
 		// On some older browsers (notably Safari on iOS 4.1 - see issue #56) the event target may be a text node.
@@ -356,42 +339,34 @@
 		return eventTarget;
 	};
 
-
-	/**
-	 * On touch start, record the position and scroll offset.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
 	FastClick.prototype.onTouchStart = function(event) {
+		console.log('touch-start');
 		var targetElement, touch, selection;
 
 		// 多指触控的手势则忽略
 		if (event.targetTouches.length > 1) {
 			return true;
 		}
-
+		//老的浏览器会将文本节点选中，这里需要返回其父级元素节点
 		targetElement = this.getTargetElementFromEventTarget(event.target);
 		touch = event.targetTouches[0];
 
 		if (deviceIsIOS) {
 
-			// Only trusted events will deselect text on iOS (issue #49)
+			// 若用户已经选中了一些内容（比如选中了一段文本打算复制），则忽略
 			selection = window.getSelection();
 			if (selection.rangeCount && !selection.isCollapsed) {
 				return true;
 			}
 
 			if (!deviceIsIOS4) {
-
-				// Weird things happen on iOS when an alert or confirm dialog is opened from a click event callback (issue #23):
-				// when the user next taps anywhere else on the page, new touchstart and touchend events are dispatched
-				// with the same identifier as the touch event that previously triggered the click that triggered the alert.
-				// Sadly, there is an issue on iOS 4 that causes some normal touch events to have the same identifier as an
-				// immediately preceeding touch event (issue #52), so this fix is unavailable on that platform.
-				// Issue 120: touch.identifier is 0 when Chrome dev tools 'Emulate touch events' is set with an iOS device UA string,
-				// which causes all touch events to be ignored. As this block only applies to iOS, and iOS identifiers are always long,
-				// random integers, it's safe to to continue if the identifier is 0 here.
+				/*
+				怪异特性处理——若click事件回调打开了一个alert/confirm，
+				用户下一次tap页面的其它地方时，新的touchstart和touchend
+                事件会拥有同一个touch.identifier（新的 touch event 会跟上一次触发alert点击的 touch event 一样），
+                为避免将新的event当作之前的event导致问题，这里需要禁用事件
+                另外chrome的开发工具启用'Emulate touch events'后，iOS UA下的 identifier 会变成0，所以要做容错避免调试过程也被禁用事件了
+				*/
 				if (touch.identifier && touch.identifier === this.lastTouchIdentifier) {
 					event.preventDefault();
 					return false;
@@ -399,75 +374,62 @@
 
 				this.lastTouchIdentifier = touch.identifier;
 
-				// If the target element is a child of a scrollable layer (using -webkit-overflow-scrolling: touch) and:
-				// 1) the user does a fling scroll on the scrollable layer
-				// 2) the user stops the fling scroll with another tap
-				// then the event.target of the last 'touchend' event will be the element that was under the user's finger
-				// when the fling scroll was started, causing FastClick to send a click event to that layer - unless a check
-				// is made to ensure that a parent layer was not scrolled before sending a synthetic click (issue #42).
+				/*
+				如果target是一个滚动容器里的一个子元素(使用了 -webkit-overflow-scrolling: touch) ，而且满足:
+                1) 用户非常快速地滚动外层滚动容器
+                2) 用户通过tap停止住了这个快速滚动
+                这时候最后的'touchend'的event.target会变成用户最终手指下的那个元素
+                所以当快速滚动开始的时候，需要做检查target是否滚动容器的子元素，如果是，做个标记
+                在touchend时检查这个标记的值（滚动容器的scrolltop）是否改变了，如果是则说明页面在滚动中，需要取消fastclick处理
+				*/
 				this.updateScrollParent(targetElement);
 			}
 		}
-
+		//做个标志表示开始追踪click事件了
 		this.trackingClick = true;
+		//标记下touch事件开始的时间戳
 		this.trackingClickStart = event.timeStamp;
 		this.targetElement = targetElement;
-
+		//标记touch起始点的页面偏移值
 		this.touchStartX = touch.pageX;
 		this.touchStartY = touch.pageY;
 
-		// Prevent phantom clicks on fast double-tap (issue #36)
+		/*
+		this.lastClickTime 是在 touchend 里标记的事件时间戳
+        this.tapDelay 为常量 200 （ms）
+        此举用来避免 phantom 的双击（200ms内快速点了两次）触发 click
+		
 		if ((event.timeStamp - this.lastClickTime) < this.tapDelay) {
 			event.preventDefault();
 		}
-
+		*/
 		return true;
 	};
 
-
-	/**
-	 * Based on a touchmove event object, check whether the touch has moved past a boundary since it started.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
-	FastClick.prototype.touchHasMoved = function(event) {
-		var touch = event.changedTouches[0], boundary = this.touchBoundary;
-
-		if (Math.abs(touch.pageX - this.touchStartX) > boundary || Math.abs(touch.pageY - this.touchStartY) > boundary) {
-			return true;
-		}
-
-		return false;
-	};
-
-
-	/**
-	 * Update the last position.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
 	FastClick.prototype.onTouchMove = function(event) {
+		console.log('touch-move');
 		if (!this.trackingClick) {
 			return true;
 		}
-
-		// If the touch has moved, cancel the click tracking
-		if (this.targetElement !== this.getTargetElementFromEventTarget(event.target) || this.touchHasMoved(event)) {
+		// 如果移动了，就取消点击行为的监听
+		if (this.targetElement === this.getTargetElementFromEventTarget(event.target)){
+			//是否发生了偏移
+			var touch = event.changedTouches[0], boundary = this.touchBoundary;
+			if (Math.abs(touch.pageX - this.touchStartX) > boundary || 
+				Math.abs(touch.pageY - this.touchStartY) > boundary
+			) {
+				this.trackingClick = false;
+				this.targetElement = null;
+			}
+		}else{
 			this.trackingClick = false;
 			this.targetElement = null;
 		}
-
 		return true;
 	};
 
-
 	/**
-	 * Attempt to find the labelled control for the given label element.
-	 *
-	 * @param {EventTarget|HTMLLabelElement} labelElement
-	 * @returns {Element|null}
+	 * 找到label标签对应控制的元素节点
 	 */
 	FastClick.prototype.findControl = function(labelElement) {
 
@@ -486,14 +448,8 @@
 		return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea');
 	};
 
-
-	/**
-	 * On touch end, determine whether to send a click event at once.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
 	FastClick.prototype.onTouchEnd = function(event) {
+		console.log('touch-end');
 		var forElement, trackingClickStart, targetTagName, scrollParent, touch, targetElement = this.targetElement;
 
 		if (!this.trackingClick) {
@@ -501,61 +457,60 @@
 		}
 
 		// Prevent phantom clicks on fast double-tap (issue #36)
-		if ((event.timeStamp - this.lastClickTime) < this.tapDelay) {
-			this.cancelNextClick = true;
-			return true;
-		}
+		// if ((event.timeStamp - this.lastClickTime) < this.tapDelay) {
+		// 	this.cancelNextClick = true;
+		// 	return true;
+		// }
 
 		if ((event.timeStamp - this.trackingClickStart) > this.tapTimeout) {
-			return true;
+			return true; //时间过长了
 		}
 
-		// Reset to prevent wrong click cancel on input (issue #156).
+		// 得重置为false，避免input事件被意外取消
 		this.cancelNextClick = false;
-
 		this.lastClickTime = event.timeStamp;
-
 		trackingClickStart = this.trackingClickStart;
+		//重置下属性
 		this.trackingClick = false;
 		this.trackingClickStart = 0;
 
-		// On some iOS devices, the targetElement supplied with the event is invalid if the layer
-		// is performing a transition or scroll, and has to be re-detected manually. Note that
-		// for this to function correctly, it must be called *after* the event target is checked!
-		// See issue #57; also filed as rdar://13048589 .
+		// iOS 6.0-7.*版本下有个问题 —— 如果layer处于transition或scroll过程，event所提供的target是不正确的
+        // 所以咱们得重找 targetElement（这里通过 document.elementFromPoint 接口来寻找）
 		if (deviceIsIOSWithBadTarget) {
 			touch = event.changedTouches[0];
-
-			// In certain cases arguments of elementFromPoint can be negative, so prevent setting targetElement to null
+			// 有些情况下 elementFromPoint 里的参数是预期外/不可用的, 所以还得避免 targetElement 为 null
 			targetElement = document.elementFromPoint(touch.pageX - window.pageXOffset, touch.pageY - window.pageYOffset) || targetElement;
 			targetElement.fastClickScrollParent = this.targetElement.fastClickScrollParent;
 		}
 
 		targetTagName = targetElement.tagName.toLowerCase();
-		if (targetTagName === 'label') {
+		if (targetTagName === 'label') {//是label则激活其指向的组件
 			forElement = this.findControl(targetElement);
 			if (forElement) {
-				this.focus(targetElement);
+				this.focus(targetElement); //焦点事件
+				//安卓直接返回（无需合成click事件触发，因为点击和激活元素不同，不存在点透）
 				if (deviceIsAndroid) {
 					return false;
 				}
-
 				targetElement = forElement;
 			}
-		} else if (this.needsFocus(targetElement)) {
-
-			// Case 1: If the touch started a while ago (best guess is 100ms based on tests for issue #36) then focus will be triggered anyway. Return early and unset the target element reference so that the subsequent click will be allowed through.
-			// Case 2: Without this exception for input elements tapped when the document is contained in an iframe, then any inputted text won't be visible even though the value attribute is updated as the user types (issue #37).
+		} else if (this.needsFocus(targetElement)) { //非label则识别是否需要focus的元素
+			//手势停留在组件元素时长超过100ms，则置空this.targetElement并返回
+            //（而不是通过调用this.focus来触发其聚焦事件，走的原生的click/focus事件触发流程）
+            //这也是为何文章开头提到的问题中，稍微久按一点（超过100ms）textarea是可以把光标定位在正确的地方的原因
+            //另外iOS下有个意料之外的bug——如果被点击的元素所在文档是在iframe中的，手动调用其focus的话，
+            //会发现你往其中输入的text是看不到的（即使value做了更新），so这里也直接返回
+            console.log(event.timeStamp - trackingClickStart);
 			if ((event.timeStamp - trackingClickStart) > 100 || (deviceIsIOS && window.top !== window && targetTagName === 'input')) {
 				this.targetElement = null;
-				return false;
+				return false; //走原生事件
 			}
 
-			this.focus(targetElement);
-			this.sendClick(targetElement, event);
+			this.focus(targetElement); //焦点事件
+			this.sendClick(targetElement, event); //点击事件
 
-			// Select elements need the event to go through on iOS 4, otherwise the selector menu won't open.
-			// Also this breaks opening selects when VoiceOver is active on iOS6, iOS7 (and possibly others)
+			//iOS4下的 select 元素不能禁用默认事件（要确保它能被穿透），否则不会打开select目录
+            //有时候 iOS6/7 下（VoiceOver开启的情况下）也会如此
 			if (!deviceIsIOS || targetTagName !== 'select') {
 				this.targetElement = null;
 				event.preventDefault();
@@ -565,17 +520,15 @@
 		}
 
 		if (deviceIsIOS && !deviceIsIOS4) {
-
-			// Don't send a synthetic click event if the target element is contained within a parent layer that was scrolled
-			// and this tap is being used to stop the scrolling (usually initiated by a fling - issue #42).
+			// 滚动容器的垂直滚动偏移改变了，说明是容器在做滚动而非点击，则忽略
 			scrollParent = targetElement.fastClickScrollParent;
 			if (scrollParent && scrollParent.fastClickLastScrollTop !== scrollParent.scrollTop) {
 				return true;
 			}
 		}
 
-		// Prevent the actual click from going though - unless the target node is marked as requiring
-		// real clicks or if it is in the whitelist in which case only non-programmatic clicks are permitted.
+		// 查看元素是否无需处理的白名单内（比如加了名为“needsclick”的class）
+        // 不是白名单的则照旧预防穿透处理，立即触发合成的click事件
 		if (!this.needsClick(targetElement)) {
 			event.preventDefault();
 			this.sendClick(targetElement, event);
@@ -584,106 +537,79 @@
 		return false;
 	};
 
-
-	/**
-	 * On touch cancel, stop tracking the click.
-	 *
-	 * @returns {void}
-	 */
 	FastClick.prototype.onTouchCancel = function() {
 		this.trackingClick = false;
 		this.targetElement = null;
 	};
 
-
-	/**
-	 * Determine mouse events which should be permitted.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
+	//用于决定是否允许穿透事件（触发layer的click默认事件）
 	FastClick.prototype.onMouse = function(event) {
-
-		// If a target element was never set (because a touch event was never fired) allow the event
+		// touch事件一直没触发
 		if (!this.targetElement) {
 			return true;
 		}
-
+		//触发的click事件是合成的 在 .sendClick函数中触发
 		if (event.forwardedTouchEvent) {
 			return true;
 		}
-
-		// Programmatically generated events targeting a specific element should be permitted
+		// 编程派生的事件所对应元素事件可以被允许
+        // 确保其没执行过 preventDefault 方法（event.cancelable 不为 true）即可
 		if (!event.cancelable) {
 			return true;
 		}
 
-		// Derive and check the target element to see whether the mouse event needs to be permitted;
-		// unless explicitly enabled, prevent non-touch click events from triggering actions,
-		// to prevent ghost/doubleclicks.
+		// 需要做预防穿透处理的元素，或者做了快速（200ms）双击的情况
 		if (!this.needsClick(this.targetElement) || this.cancelNextClick) {
-
-			// Prevent any user-added listeners declared on FastClick element from being fired.
+			//停止当前默认事件和冒泡
 			if (event.stopImmediatePropagation) {
 				event.stopImmediatePropagation();
 			} else {
-
-				// Part of the hack for browsers that don't support Event#stopImmediatePropagation (e.g. Android 2)
+				// 不支持 stopImmediatePropagation 的设备(比如Android 2)做标记，
+                // 确保该事件回调不会执行
 				event.propagationStopped = true;
 			}
-
-			// Cancel the event
+			// 取消事件和冒泡
 			event.stopPropagation();
 			event.preventDefault();
-
 			return false;
 		}
-
-		// If the mouse event is permitted, return true for the action to go through.
+		//允许穿透
 		return true;
 	};
 
-
-	/**
-	 * On actual clicks, determine whether this is a touch-generated click, a click action occurring
-	 * naturally after a delay after a touch (which needs to be cancelled to avoid duplication), or
-	 * an actual click which should be permitted.
-	 *
-	 * @param {Event} event
-	 * @returns {boolean}
-	 */
+	//click事件常规都是touch事件衍生来的，也排在touch后面触发。
+    //对于那些我们在touch事件过程没有禁用掉默认事件的event来说，我们还需要在click的捕获阶段进一步
+    //做判断决定是否要禁掉点击事件（防穿透）
+    //注意：点击事件监听的是事件捕捉，不是事件冒泡阶段
 	FastClick.prototype.onClick = function(event) {
+		console.log('click');
+		console.log('----------------');
 		var permitted;
 
-		// It's possible for another FastClick-like library delivered with third-party code to fire a click event before FastClick does (issue #44). In that case, set the click-tracking flag back to false and return early. This will cause onTouchEnd to return early.
+		// 如果还有 trackingClick 存在，可能是某些UI事件阻塞了touchEnd 的执行
 		if (this.trackingClick) {
 			this.targetElement = null;
 			this.trackingClick = false;
 			return true;
 		}
 
-		// Very odd behaviour on iOS (issue #18): if a submit element is present inside a form and the user hits enter in the iOS simulator or clicks the Go button on the pop-up OS keyboard the a kind of 'fake' click event will be triggered with the submit-type input element as the target.
+		// ios怪异行为的处理 —— 如果用户点击了iOS模拟器里某个表单中的一个submit元素
+        // 或者点击了弹出来的键盘里的“Go”按钮，会触发一个“伪”click事件（target是一个submit-type的input元素）
 		if (event.target.type === 'submit' && event.detail === 0) {
 			return true;
 		}
 
 		permitted = this.onMouse(event);
 
-		// Only unset targetElement if the click is not permitted. This will ensure that the check for !targetElement in onMouse fails and the browser's click doesn't go through.
+		//如果点击是被允许的，将this.targetElement置空可以确保onMouse事件里不会阻止默认事件
 		if (!permitted) {
 			this.targetElement = null;
 		}
 
-		// If clicks are permitted, return true for the action to go through.
 		return permitted;
 	};
 
-
-	/**
-	 * Remove all FastClick's event listeners.
-	 *
-	 * @returns {void}
-	 */
+	//销毁Fastclick所注册的监听事件
 	FastClick.prototype.destroy = function() {
 		var layer = this.layer;
 
@@ -700,83 +626,21 @@
 		layer.removeEventListener('touchcancel', this.onTouchCancel, false);
 	};
 
-
-	/**
-	 * Check whether FastClick is needed.
-	 *
-	 * @param {Element} layer The layer to listen on
-	 */
+	//检查是否需要监听
 	FastClick.notNeeded = function(layer) {
-		var metaViewport;
-		var chromeVersion;
-		var blackberryVersion;
-		var firefoxVersion;
-
-		// Devices that don't support touch don't need FastClick
 		if (typeof window.ontouchstart === 'undefined') {
 			return true;
 		}
-
-		// Chrome version - zero for other browsers
-		chromeVersion = +(/Chrome\/([0-9]+)/.exec(navigator.userAgent) || [,0])[1];
-
-		if (chromeVersion) {
-
-			if (deviceIsAndroid) {
-				metaViewport = document.querySelector('meta[name=viewport]');
-
-				if (metaViewport) {
-					// Chrome on Android with user-scalable="no" doesn't need FastClick (issue #89)
-					if (metaViewport.content.indexOf('user-scalable=no') !== -1) {
-						return true;
-					}
-					// Chrome 32 and above with width=device-width or less don't need FastClick
-					if (chromeVersion > 31 && document.documentElement.scrollWidth <= window.outerWidth) {
-						return true;
-					}
-				}
-
-			// Chrome desktop doesn't need FastClick (issue #15)
-			} else {
-				return true;
-			}
+		//如果是 windows Phone 则不做处理，没踩过 wPhone 的坑
+		if(deviceIsWindowsPhone){
+			return true; 
 		}
-
-		// Firefox version - zero for other browsers
-		firefoxVersion = +(/Firefox\/([0-9]+)/.exec(navigator.userAgent) || [,0])[1];
-
-		if (firefoxVersion >= 27) {
-			// Firefox 27+ does not have tap delay if the content is not zoomable - https://bugzilla.mozilla.org/show_bug.cgi?id=922896
-
-			metaViewport = document.querySelector('meta[name=viewport]');
-			if (metaViewport && (metaViewport.content.indexOf('user-scalable=no') !== -1 || document.documentElement.scrollWidth <= window.outerWidth)) {
-				return true;
-			}
-		}
-
 		return false;
 	};
 
-
-	/**
-	 * Factory method for creating a FastClick object
-	 *
-	 * @param {Element} layer The layer to listen on
-	 * @param {Object} [options={}] The options to override the defaults
-	 */
-	FastClick.attach = function(layer, options) {
-		return new FastClick(layer, options);
-	};
-
-
 	if (typeof define === 'function' && typeof define.amd === 'object' && define.amd) {
-
-		// AMD. Register as an anonymous module.
-		define(function() {
-			return FastClick;
-		});
+		define(function() { return FastClick; });
 	} else if (typeof module !== 'undefined' && module.exports) {
-		module.exports = FastClick.attach;
 		module.exports.FastClick = FastClick;
 	} else {
 		window.FastClick = FastClick;

@@ -135,6 +135,14 @@
                 "$component"
             ]
         },
+        "fastclick-demo/fastclick.js": {
+            "uri": "/fastclick-demo/fastclick.js",
+            "type": "js"
+        },
+        "fastclick-demo/fc.js": {
+            "uri": "/fastclick-demo/fc.js",
+            "type": "js"
+        },
         "index.css": {
             "uri": "/index.css",
             "type": "css"
@@ -233,9 +241,12 @@
                 "comp-dataview",
                 "comp-dataview2",
                 "comp-dataview3",
-                "comp-dataview4",
-                "jquery"
+                "comp-dataview4"
             ]
+        },
+        "pages/shelf/shelf.js": {
+            "uri": "/pages/shelf/shelf.js",
+            "type": "js"
         }
     },
     "pkg": {}
