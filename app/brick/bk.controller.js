@@ -93,9 +93,10 @@ define('$controller', ['$config', '$template'], function(require, exports) {
             }
             selfTop || (selfTop = 1);
             //需要与DOM渲染的线程错开滞后执行
-            setTimeout(function() {
-                win.scrollTo(0, selfTop);
-            }, 4);
+            selfTop === win.pageYOffset || win.scrollTo(0, selfTop);
+            setTimeout(function(){
+                selfTop === win.pageYOffset || win.scrollTo(0, selfTop);
+            },4);
         },
         saveScroll: function() {
             this.scrollTop = win.pageYOffset || win.scrollY || 1;
@@ -220,7 +221,7 @@ define('$controller', ['$config', '$template'], function(require, exports) {
             //前一个页面移除完毕后设置当前模块缓存住的y轴
             //如果此跳转是来自用户从页面点击进入的,则不设置y轴
             //如果是由浏览器或history引发的页面变更,则恢复y轴 
-            pageModule.options.formUser || pageModule.setScroll(true);
+            pageModule.options.formUser ? pageModule.setScroll(1) : pageModule.setScroll(true) ;
         },
         //加载页面模块
         loadPage: function(pageModule) {

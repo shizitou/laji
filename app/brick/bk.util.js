@@ -112,7 +112,7 @@ define('$util', function() {
 		}
 		//command: 'push' || 'place'
 	util.history = function(command, page, params) {
-		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
+		window['history'][command + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
 	return {
 		collection: util,
