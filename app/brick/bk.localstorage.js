@@ -1,3 +1,4 @@
+/* eslint-disable */
 define('$localStorage', function() {
 	var local = window.localStorage,
 		//先检测是否支持ls

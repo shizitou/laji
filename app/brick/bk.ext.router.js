@@ -1,3 +1,4 @@
+/* eslint-disable */
 //负责解析hash，监听hash的改变
 define('$router', ['$controller', '$util', '$config'], function(require) {
 	'use strict';

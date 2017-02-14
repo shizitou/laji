@@ -1,3 +1,4 @@
+/* eslint-disable */
 define('$brick', ['$router', '$config', '$util', '$controller'], function(require, exports, module) {
 	'use strict';
 	var BK;
@@ -6,10 +7,6 @@ define('$brick', ['$router', '$config', '$util', '$controller'], function(requir
 	var f = function() {};
 	f.prototype = originModule;
 	BK = window.BK = new f();
-
-	var utilMod = require('$util');
-	var routerMod = require('$router');
-	var controlMod = require('$controller');
 	var appConfigs = require('$config');
 	BK.config = function(options) {
 		//留下业务中需要的配置项,其他的交给模块加载器处理
@@ -23,8 +20,18 @@ define('$brick', ['$router', '$config', '$util', '$controller'], function(requir
 		}
 		originModule.config(options);
 	}
+	BK.paths = function(paths) {
+		this.config({ paths: paths });
+	};
+	BK.deplist = function(deplist) {
+		this.config({ deplist: deplist });
+	};
 	BK.start = function(options) {
 		options && this.config(options);
+		//这里将模块的载入放到start里面，是为了在各自模块中在引用$config时，是已经处理完毕的
+		var utilMod = require('$util'); 
+		var routerMod = require('$router');
+		var controlMod = require('$controller');
 		//将收集的API绑定给BK
 		utilMod.bindTo(BK);
 		if (routerMod) {
@@ -42,16 +49,6 @@ define('$brick', ['$router', '$config', '$util', '$controller'], function(requir
 			}
 			controlMod.firePageControl(controller, hashParam, {});
 		}
-	};
-	BK.paths = function(paths) {
-		this.config({
-			paths: paths
-		});
-	};
-	BK.deplist = function(deplist) {
-		this.config({
-			deplist: deplist
-		});
 	};
 	var events = {};
 	//globalEvent是为了兼容旧代码的调用

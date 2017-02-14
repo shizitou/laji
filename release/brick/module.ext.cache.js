@@ -1,3 +1,4 @@
+/* eslint-disable */
 (function(define) {
 	function clean(prefixKey) {
 		try {

@@ -74,7 +74,8 @@ BK.config({
 	// ajaxCacheHash: '~~',
 	paths: {
 		'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js',
-	}
+	},
+	// crossOrigin: true,
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

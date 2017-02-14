@@ -17,32 +17,38 @@
 </html>
 <script>
 	/* 载入框架 */
-	/*
+	/* eslint-disable */
+/*
+	version: 3.8.0
+		新增功能插件模块 $KFC。
+		提取开源fastClick代码为项目订制改写，新增点击态功能。
+		具体使用情况，见文档。
+	version: 3.7.5
+		将crossOrigin变成配置项，默认不开启，
+		因为如果开启的话必须要服务器端进行配合才可以使用
+   	version: 3.7.4
+		修复：用户手动触发跳转时，页面的y轴没有被正确设置【bk.controller.js】
 	version: 3.7.3
-		$http的$defer中不改写原生Promise
+		$http的$defer中不改写原生Promise 【bk.http.js】
 		模块加载器支持绝对路径：
 			判定规则是以 http:// 或 https:// 开头的path
 			绝对路径的模块不进行处理url处理，也不会进入到genUrl挂载点
-
-	version: 3.7.2
+	version: 3.7.2 
+		在发起 script请求的时候，对标签添加上 crossOrigin 属性【module.js】
+		修复：未载入bk.ext.router.js插件时，defController失效
 		增强$http模块的cache功能：
 			识别 dataType:'json'
 		UIcomponent的样式修正：针对一些特定的style进行处理
-	
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
 			define.reload('modId'[,successFun(require)][,failFun(require)]);
 		此函数会清楚模块对应的内存缓存，并触发模块请求;
-
 	version: 3.7.0
 		合并了 3.6 与 3.5 版本;
 		增加了按字符更新的缓存插件:module.ext.upbychar.js
-
 		添加 define.redefine(factory) 方法
 		此方法用来重定义 window.define 方法，并将旧有的 window.define方法复制给factory
-
-		fixed bug: 引用ext.upbychar.js 后 define身上静态方法失效的问题
-
+		修复: 引用ext.upbychar.js 后 define身上静态方法失效的问题
 	version: 3.5.2
 		为$http添加了sessionStorage的数据缓存操作:
 			开启参数为： ajaxCache
@@ -50,9 +56,8 @@
 			添加后缀：ajaxCacheHash
 		当使用缓存得到数据时,框架会尽量返回$.Deferred实例
 			如果引用的zepto没有引入Deferred则使用原生Promise,否则则返回undefined;
-
 	version: 3.5.1
-		修正了 $http.post, $http.get 方法
+		修复： $http.post, $http.get 方法
 		参数与 zepto,jquery 官网文档保持一致
 			( url, data, success, dataType )
 **/
@@ -60,13 +65,14 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.3',
+		version: '3.8.0',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
 			combo: null, // 配置函数来启用combo
 			baseUrl: "", // 后面用来拼接path作为完整请求地址
+			crossOrigin: false, //默认不开启
 		}
 	};
 	/**
@@ -208,6 +214,9 @@
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
 			node.async = true;
+			if(coreConfig.crossOrigin){
+				node.crossOrigin = true;
+			}
 			node.src = url;
 			if ('onload' in node) {
 				node.onload = function() {
@@ -455,7 +464,7 @@
 		}
 
 		function fetch(ids) {
-			define.load(ids.slice(0), function(s) {
+			define.load(ids.slice(0), function() {
 				each(ids, function(modId) {
 					moduleCache[modId].load();
 				});
@@ -488,7 +497,7 @@
 		var options = coreConfig;
 		each(obj, function(value, key) {
 			if (key === 'paths') { //对paths的设置项做特殊处理
-				return configPaths(value);
+				return comboPaths(value);
 			}
 			var t = type(value);
 			if (t === 'object' || t === 'array') {
@@ -504,8 +513,7 @@
 		}
 		mounts.dispatch('config');
 	};
-
-	function configPaths(obj) { //{key: value}
+	function comboPaths(obj) { //{key: value}
 		var pathsCon = coreConfig.paths; // {}
 		each(obj, function(val, key) {
 			pathsCon[key] = val;
@@ -610,7 +618,8 @@
 	}
 })(this);;
 	/* module.ext.*系列一定要放到module.js之后 */
-	(function(define) {
+	/* eslint-disable */
+(function(define) {
 	function clean(prefixKey) {
 		try {
 			for (var n in localStorage) {
@@ -702,7 +711,8 @@
 })(define);
 	// __inline('./brick/module.ext.upbychar.js'); 
 	/* bk系列的一定要放到module系列之后 */
-	define('$util', function() {
+	/* eslint-disable */
+define('$util', function() {
 	var util = {};
 	util.clone = function(obj) {
 		return JSON.parse(JSON.stringify(obj));
@@ -816,7 +826,7 @@
 		}
 		//command: 'push' || 'place'
 	util.history = function(command, page, params) {
-		window['history'][commend + 'State']({}, '', '#!/' + this.genPHash(page, params));
+		window['history'][command + 'State']({}, '', '#!/' + this.genPHash(page, params));
 	}
 	return {
 		collection: util,
@@ -863,7 +873,8 @@
 		}
 	}
 });;
-	define('$config', function() {
+	/* eslint-disable */
+define('$config', function() {
 	//这里都是框架默认的配置选项
 	return {
 		//默认控制器: 'ctac'
@@ -882,10 +893,18 @@
 		ajaxCacheFilter: function(res) {
 			return !!res;
 		},
-		ajaxCacheHash: ''
+		ajaxCacheHash: '',
+		/*  开启的话直接配置 true 或者 {} 即可
+			touchBoundary: 10px
+			tapTimeout: 500
+			active: true
+			useMouseEvent: false
+		***/
+		fastClick: false,
 	};
 });;
-	//模板引擎
+	/* eslint-disable */
+//模板引擎
 define('$component', ['$template'], function(require, exports, module) {
     var $template = require('$template');
     var compsList = {};
@@ -903,6 +922,7 @@ define('$component', ['$template'], function(require, exports, module) {
     document.head.appendChild(style);
 
     function addStyle(css, prefixClass) {
+        var st = +new Date();
         css = css.replace(rep_style, function(all, key, val) {
             key = key.trim();
             all = key.charAt(0);
@@ -912,6 +932,9 @@ define('$component', ['$template'], function(require, exports, module) {
             }
             return key + val;
         });
+        setTimeout(function(){
+            console.log( +new Date - st );
+        },0);
         style.appendChild(document.createTextNode(css));
     }
 
@@ -1063,13 +1086,16 @@ define('$template', [], function(require) {
         }
     };
 });;
-	//负责业务模块的管理和控制
+	/* eslint-disable */
+//负责业务模块的管理和控制
 define('$controller', ['$config', '$template'], function(require, exports) {
     'use strict';
     var win = window,
         doc = win.document,
         config = require('$config'),
         template = require('$template'),
+        FastClick = require('$KFC'), //不一定存在
+        kfcConfig = config.fastClick,
         //页面模块存放在此
         pageModuleCache = {},
         //存放一些简单的工具函数
@@ -1092,13 +1118,19 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         LOADED: 2,
         INITED: 3
     }
-
+    //先处理下fastClick的一些操作
+    if(kfcConfig && FastClick){ //开启了 fastclick 功能
+        if(typeof kfcConfig !== 'object')
+            kfcConfig = {};
+    }else{ // 没有开启fkc 或者 没有引入扩展文件
+        kfcConfig = false;
+    }
     //页面模块
-    function pageModule(pageId) {
+    function pageModule(pageCt) {
         //标志模块是否被加载完毕
         this.status = pageStatus.UNLOAD;
         //模块ID的标示
-        this.pageID = pageId;
+        this.pageId = pageCt;
         //页面模块执行完毕后的开放东西
         this.exports = null;
         //页面滚动高度,这里最小值为1是为了屏蔽滚动条
@@ -1107,6 +1139,8 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         this.notRecoveryTop = false;
         //模块在页面中的显示情况
         this.viewStatus = false;
+        //fastClick功能
+        this.fastClick = null;
     };
     pageModule.prototype = {
         //加载完毕后初始化自身的模块
@@ -1130,6 +1164,9 @@ define('$controller', ['$config', '$template'], function(require, exports) {
                 }
                 mainElem = self.el = doc.getElementById(mainElem.substr(1));
                 exports.el = window.$ && $.fn ? $(mainElem) : mainElem;
+                if(mainElem && kfcConfig){ //绑定fastClick行为
+                    self.fastClick = new FastClick(mainElem,kfcConfig);
+                }
             } else {
                 throw new Error('未指定mainElem');
             }
@@ -1158,15 +1195,15 @@ define('$controller', ['$config', '$template'], function(require, exports) {
             }
             selfTop || (selfTop = 1);
             //需要与DOM渲染的线程错开滞后执行
-            setTimeout(function() {
-                win.scrollTo(0, selfTop);
-            }, 4);
+            selfTop === win.pageYOffset || win.scrollTo(0, selfTop);
+            setTimeout(function(){
+                selfTop === win.pageYOffset || win.scrollTo(0, selfTop);
+            },4);
         },
         saveScroll: function() {
             this.scrollTop = win.pageYOffset || win.scrollY || 1;
         }
     };
-
     function Controller() {
         //当前页面成功加载后,存放前一个页面控制器
         this.prevPage = undefined;
@@ -1176,25 +1213,45 @@ define('$controller', ['$config', '$template'], function(require, exports) {
     Controller.builtIn = {
         //清除当前页面模块
         __cleanCache: function() {
-            this.__pageModule.status = pageStatus.LOADED;
+            pageModuleCache[this.__pageId].status = pageStatus.LOADED;
         },
         //离开页面时, 将自身页面scrollTop清除
         __cleanScrollTop: function() {
-            this.__pageModule.notRecoveryTop = true;
+            pageModuleCache[this.__pageId].notRecoveryTop = true;
         },
         //设置页面的scrollTop,如果不传递参数,就用上一次保存的
         __setScrollTop: function(scTop) {
-            this.__pageModule.setScroll(scTop);
+            pageModuleCache[this.__pageId].setScroll(scTop);
         },
         __hideLoading: function() {
             //触发时必须是当前运行的模块时,才可以触发
-            if (controlMod.runningPage === this.__pageModule) {
+            if (controlMod.runningPage === pageModuleCache[this.__pageId]) {
                 loadingControl && clearTimeout(loadingControl);
                 loadingDOM && viewUtil.hide(loadingDOM);
             }
         },
         __loading: function() {
             controlMod.loading();
+        },
+        __closeKFC: function(){
+            //移除模块的fastClick touch监听
+            var pageModule = pageModuleCache[this.__pageId];
+            if(pageModule.fastClick){
+                pageModule.fastClick.destroy();
+                pageModule.fastClick = null;
+            }
+        },
+        __openKFC: function(options){ //这里可以自由修改配置参数
+            //开启页面的fastClick touch监听
+            var pageModule = pageModuleCache[this.__pageId];
+            var el = this.el;
+            if(FastClick && el){
+                el[0] && (el = el[0]);
+                options || (options = kfcConfig); //如果没有传递配置参数，就使用BK.config时的
+                //如果那时设置的是空，也没事
+                pageModule.fastClick && pageModule.fastClick.destroy();
+                pageModule.fastClick = new FastClick(el,options);
+            }
         }
     };
     Controller.prototype = {
@@ -1250,58 +1307,53 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         },
         //执行跳转
         execPage: function(pageModule) {
-            var pageExports = pageModule.exports,
-                pageView = pageModule.pageView,
+            var curPageObj = pageModule.exports,
                 prevModule = this.runningPage,
-                prevExports,
-                prevView;
-
+                prevPageObj;
             //设置当前运行的模块
             this.runningPage = pageModule;
-
             //解决当前显示中的模块离开
             if (prevModule) {
-                prevExports = prevModule.exports;
+                prevPageObj = prevModule.exports;
                 this.prevPage = prevModule;
                 //这里的参数: 执行离开的模块的参数,当前显示的模块的参数 ,pageModule.params
-                prevExports.leave && prevExports.leave(prevModule.params);
+                prevPageObj.leave && prevPageObj.leave(prevModule.params);
                 BK.trigger('afterLeave', [pageModule.params]);
                 prevModule.saveScroll();
-                prevView = prevModule.pageView
-                if (prevView)
-                    prevView.parentNode.removeChild(prevView),
+                prevPageObj = prevModule.pageView;
+                if (prevPageObj)
+                    prevPageObj.parentNode.removeChild(prevPageObj),
                     prevModule.viewStatus = false;
             }
-
             //先触发新的模块,将结构显示显示到页面中
             pageModule.status > pageStatus.LOADED ?
                 pageModule.appendView() :
                 pageModule.init();
 
             BK.trigger('beforeEnter', [pageModule.params]);
-            //参数：当前模块的参数,上一个模块的参数 ,prevModule.params
-            pageExports.enter && pageExports.enter(pageModule.params);
-
+            //参数：当前模块的参数,上一个模块的参数 
+            curPageObj.enter && curPageObj.enter(pageModule.params);
             //前一个页面移除完毕后设置当前模块缓存住的y轴
             //如果此跳转是来自用户从页面点击进入的,则不设置y轴
             //如果是由浏览器或history引发的页面变更,则恢复y轴 
-            pageModule.options.formUser || pageModule.setScroll(true);
+            pageModule.options.formUser ? pageModule.setScroll(1) : pageModule.setScroll(true) ;
+            curPageObj = prevModule = prevPageObj;
         },
         //加载页面模块
         loadPage: function(pageModule) {
             var that = this;
-            require.async(pageModule.pageID, function(module) {
+            require.async(pageModule.pageId, function(module) {
                 //将请求的模块进行保存
                 if (module) {
                     BK.extend(module, Controller.builtIn);
-                    module.__pageModule = pageModule;
+                    module.__pageId = pageModule.pageId;
                     pageModule.exports = module;
                     pageModule.status = pageStatus.LOADED;
                     that.execPage(pageModule);
                     //网络问题,请求失败,可以提示用户刷新页面
                 } else {
-                    BK.trigger('loadFail', [pageModule.pageID]);
-                    pageModuleCache[pageModule.pageID] = null;
+                    BK.trigger('loadFail', [pageModule.pageId]);
+                    pageModuleCache[pageModule.pageId] = null;
                 }
             });
         }
@@ -1323,7 +1375,8 @@ define('$controller', ['$config', '$template'], function(require, exports) {
     return controlMod;
 });;
 	// __inline('./brick/bk.ext.router.js'); 
-	define('$DeferByPromise', function() {
+	/* eslint-disable */
+define('$DeferByPromise', function() {
 	/**
 		这里是做了一个基于Promise的defer类，
 		但和$.Deferred还是有些区别：
@@ -1574,7 +1627,8 @@ define('$http', ['$config'], function(require) {
 	return http;
 });;
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
-	define('$brick', ['$router', '$config', '$util', '$controller'], function(require, exports, module) {
+	/* eslint-disable */
+define('$brick', ['$router', '$config', '$util', '$controller'], function(require, exports, module) {
 	'use strict';
 	var BK;
 	var originModule = window.module;
@@ -1582,10 +1636,6 @@ define('$http', ['$config'], function(require) {
 	var f = function() {};
 	f.prototype = originModule;
 	BK = window.BK = new f();
-
-	var utilMod = require('$util');
-	var routerMod = require('$router');
-	var controlMod = require('$controller');
 	var appConfigs = require('$config');
 	BK.config = function(options) {
 		//留下业务中需要的配置项,其他的交给模块加载器处理
@@ -1599,8 +1649,18 @@ define('$http', ['$config'], function(require) {
 		}
 		originModule.config(options);
 	}
+	BK.paths = function(paths) {
+		this.config({ paths: paths });
+	};
+	BK.deplist = function(deplist) {
+		this.config({ deplist: deplist });
+	};
 	BK.start = function(options) {
 		options && this.config(options);
+		//这里将模块的载入放到start里面，是为了在各自模块中在引用$config时，是已经处理完毕的
+		var utilMod = require('$util'); 
+		var routerMod = require('$router');
+		var controlMod = require('$controller');
 		//将收集的API绑定给BK
 		utilMod.bindTo(BK);
 		if (routerMod) {
@@ -1618,16 +1678,6 @@ define('$http', ['$config'], function(require) {
 			}
 			controlMod.firePageControl(controller, hashParam, {});
 		}
-	};
-	BK.paths = function(paths) {
-		this.config({
-			paths: paths
-		});
-	};
-	BK.deplist = function(deplist) {
-		this.config({
-			deplist: deplist
-		});
 	};
 	var events = {};
 	//globalEvent是为了兼容旧代码的调用
@@ -3531,7 +3581,8 @@ BK.config({
 	// ajaxCacheHash: '~~',
 	paths: {
 		'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js',
-	}
+	},
+	// crossOrigin: true,
 });
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );

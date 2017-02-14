@@ -1,4 +1,12 @@
+/* eslint-disable */
 /*
+	version: 3.8.0
+		新增功能插件模块 $KFC。
+		提取开源fastClick代码为项目订制改写，新增点击态功能。
+		具体使用情况，见文档。
+	version: 3.7.5
+		将crossOrigin变成配置项，默认不开启，
+		因为如果开启的话必须要服务器端进行配合才可以使用
    	version: 3.7.4
 		修复：用户手动触发跳转时，页面的y轴没有被正确设置【bk.controller.js】
 	version: 3.7.3
@@ -29,7 +37,6 @@
 			添加后缀：ajaxCacheHash
 		当使用缓存得到数据时,框架会尽量返回$.Deferred实例
 			如果引用的zepto没有引入Deferred则使用原生Promise,否则则返回undefined;
-
 	version: 3.5.1
 		修复： $http.post, $http.get 方法
 		参数与 zepto,jquery 官网文档保持一致
@@ -39,13 +46,14 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.4',
+		version: '3.8.0',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
 			combo: null, // 配置函数来启用combo
 			baseUrl: "", // 后面用来拼接path作为完整请求地址
+			crossOrigin: false, //默认不开启
 		}
 	};
 	/**
@@ -187,7 +195,9 @@
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
 			node.async = true;
-			node.crossOrigin = true;
+			if(coreConfig.crossOrigin){
+				node.crossOrigin = true;
+			}
 			node.src = url;
 			if ('onload' in node) {
 				node.onload = function() {

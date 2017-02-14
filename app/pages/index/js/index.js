@@ -1,11 +1,17 @@
-define('index', function(require) {
+define('index',function(require) {
 	var ls = require('$localStorage');
 	var template = require('$template');
 	var $http = require('$http');
 	require('comp-dataview');require('comp-dataview2');
 	require('comp-dataview3');require('comp-dataview4');
 	var jq = require('jquery');
-	console.log(jq);
+	define('temporary',function(require, exports, module){
+		module.exports = require('$component')('temporary',{
+			tpl: '<div>temporary</div>',
+			css: __inline('big.css')
+		});
+	})
+	template('<%= $require("temporary") %>',{});
 	return {
 		el: '#page_index',
 		pageView: __inline('../html/index.html'),

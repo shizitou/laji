@@ -1,29 +1,35 @@
+/* eslint-disable */
 /*
+	version: 3.8.0
+		新增功能插件模块 $KFC。
+		提取开源fastClick代码为项目订制改写，新增点击态功能。
+		具体使用情况，见文档。
+	version: 3.7.5
+		将crossOrigin变成配置项，默认不开启，
+		因为如果开启的话必须要服务器端进行配合才可以使用
+   	version: 3.7.4
+		修复：用户手动触发跳转时，页面的y轴没有被正确设置【bk.controller.js】
 	version: 3.7.3
-		$http的$defer中不改写原生Promise
+		$http的$defer中不改写原生Promise 【bk.http.js】
 		模块加载器支持绝对路径：
 			判定规则是以 http:// 或 https:// 开头的path
 			绝对路径的模块不进行处理url处理，也不会进入到genUrl挂载点
-
-	version: 3.7.2
+	version: 3.7.2 
+		在发起 script请求的时候，对标签添加上 crossOrigin 属性【module.js】
+		修复：未载入bk.ext.router.js插件时，defController失效
 		增强$http模块的cache功能：
 			识别 dataType:'json'
 		UIcomponent的样式修正：针对一些特定的style进行处理
-	
 	version: 3.7.1
 		配合工程化动态加载，新增define.reload功能：
 			define.reload('modId'[,successFun(require)][,failFun(require)]);
 		此函数会清楚模块对应的内存缓存，并触发模块请求;
-
 	version: 3.7.0
 		合并了 3.6 与 3.5 版本;
 		增加了按字符更新的缓存插件:module.ext.upbychar.js
-
 		添加 define.redefine(factory) 方法
 		此方法用来重定义 window.define 方法，并将旧有的 window.define方法复制给factory
-
-		fixed bug: 引用ext.upbychar.js 后 define身上静态方法失效的问题
-
+		修复: 引用ext.upbychar.js 后 define身上静态方法失效的问题
 	version: 3.5.2
 		为$http添加了sessionStorage的数据缓存操作:
 			开启参数为： ajaxCache
@@ -31,9 +37,8 @@
 			添加后缀：ajaxCacheHash
 		当使用缓存得到数据时,框架会尽量返回$.Deferred实例
 			如果引用的zepto没有引入Deferred则使用原生Promise,否则则返回undefined;
-
 	version: 3.5.1
-		修正了 $http.post, $http.get 方法
+		修复： $http.post, $http.get 方法
 		参数与 zepto,jquery 官网文档保持一致
 			( url, data, success, dataType )
 **/
@@ -41,13 +46,14 @@
 	'use strict';
 	var moduleCache = {};
 	var modCore = {
-		version: '3.7.3',
+		version: '3.8.0',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时
 			paths: {}, // 模块对应的路径
 			deplist: {}, // 依赖配置表
 			combo: null, // 配置函数来启用combo
 			baseUrl: "", // 后面用来拼接path作为完整请求地址
+			crossOrigin: false, //默认不开启
 		}
 	};
 	/**
@@ -189,6 +195,9 @@
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
 			node.async = true;
+			if(coreConfig.crossOrigin){
+				node.crossOrigin = true;
+			}
 			node.src = url;
 			if ('onload' in node) {
 				node.onload = function() {
@@ -436,7 +445,7 @@
 		}
 
 		function fetch(ids) {
-			define.load(ids.slice(0), function(s) {
+			define.load(ids.slice(0), function() {
 				each(ids, function(modId) {
 					moduleCache[modId].load();
 				});
@@ -469,7 +478,7 @@
 		var options = coreConfig;
 		each(obj, function(value, key) {
 			if (key === 'paths') { //对paths的设置项做特殊处理
-				return configPaths(value);
+				return comboPaths(value);
 			}
 			var t = type(value);
 			if (t === 'object' || t === 'array') {
@@ -485,8 +494,7 @@
 		}
 		mounts.dispatch('config');
 	};
-
-	function configPaths(obj) { //{key: value}
+	function comboPaths(obj) { //{key: value}
 		var pathsCon = coreConfig.paths; // {}
 		each(obj, function(val, key) {
 			pathsCon[key] = val;

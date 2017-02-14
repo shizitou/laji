@@ -1,3 +1,4 @@
+/* eslint-disable */
 ;
 (function() {
 	var originDefine = window.define;
@@ -86,12 +87,14 @@
 		var maps = configs.diffMap;
 
 		//请求差量js内容 URL
-		try {
-			if (modulesVersion[ids] && maps.indexOf(modulesVersion[ids]) > -1) {
-				//如果在等于提供的diff范围，否则额外请求
-				ids = "/" + modulesVersion[ids] + "/" + ids + ".js";
-				queryUrl = ~queryUrl.indexOf('%s') ? queryUrl.replace('%s', ids) : queryUrl + ids;
-				return queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + configs.hash;
+		try{
+			if(typeof modulesVersion != "undefined"){
+				if(modulesVersion[ids] && maps.indexOf(modulesVersion[ids]) > -1){
+					//如果在等于提供的diff范围，否则额外请求
+					ids = "/"+modulesVersion[ids] + "/" + ids + ".js";
+					queryUrl = ~queryUrl.indexOf('%s') ? queryUrl.replace('%s', ids) : queryUrl+ids;
+					return queryUrl + (~queryUrl.indexOf('?') ? '&' : '?') + '_hash=' + configs.hash;
+				}
 			}
 		} catch (e) {
 			console.log(e);

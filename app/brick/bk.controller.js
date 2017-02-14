@@ -1,3 +1,4 @@
+/* eslint-disable */
 //负责业务模块的管理和控制
 define('$controller', ['$config', '$template'], function(require, exports) {
     'use strict';
@@ -5,6 +6,8 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         doc = win.document,
         config = require('$config'),
         template = require('$template'),
+        FastClick = require('$KFC'), //不一定存在
+        kfcConfig = config.fastClick,
         //页面模块存放在此
         pageModuleCache = {},
         //存放一些简单的工具函数
@@ -27,13 +30,19 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         LOADED: 2,
         INITED: 3
     }
-
+    //先处理下fastClick的一些操作
+    if(kfcConfig && FastClick){ //开启了 fastclick 功能
+        if(typeof kfcConfig !== 'object')
+            kfcConfig = {};
+    }else{ // 没有开启fkc 或者 没有引入扩展文件
+        kfcConfig = false;
+    }
     //页面模块
-    function pageModule(pageId) {
+    function pageModule(pageCt) {
         //标志模块是否被加载完毕
         this.status = pageStatus.UNLOAD;
         //模块ID的标示
-        this.pageID = pageId;
+        this.pageId = pageCt;
         //页面模块执行完毕后的开放东西
         this.exports = null;
         //页面滚动高度,这里最小值为1是为了屏蔽滚动条
@@ -42,6 +51,8 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         this.notRecoveryTop = false;
         //模块在页面中的显示情况
         this.viewStatus = false;
+        //fastClick功能
+        this.fastClick = null;
     };
     pageModule.prototype = {
         //加载完毕后初始化自身的模块
@@ -65,6 +76,9 @@ define('$controller', ['$config', '$template'], function(require, exports) {
                 }
                 mainElem = self.el = doc.getElementById(mainElem.substr(1));
                 exports.el = window.$ && $.fn ? $(mainElem) : mainElem;
+                if(mainElem && kfcConfig){ //绑定fastClick行为
+                    self.fastClick = new FastClick(mainElem,kfcConfig);
+                }
             } else {
                 throw new Error('未指定mainElem');
             }
@@ -102,7 +116,6 @@ define('$controller', ['$config', '$template'], function(require, exports) {
             this.scrollTop = win.pageYOffset || win.scrollY || 1;
         }
     };
-
     function Controller() {
         //当前页面成功加载后,存放前一个页面控制器
         this.prevPage = undefined;
@@ -112,25 +125,45 @@ define('$controller', ['$config', '$template'], function(require, exports) {
     Controller.builtIn = {
         //清除当前页面模块
         __cleanCache: function() {
-            this.__pageModule.status = pageStatus.LOADED;
+            pageModuleCache[this.__pageId].status = pageStatus.LOADED;
         },
         //离开页面时, 将自身页面scrollTop清除
         __cleanScrollTop: function() {
-            this.__pageModule.notRecoveryTop = true;
+            pageModuleCache[this.__pageId].notRecoveryTop = true;
         },
         //设置页面的scrollTop,如果不传递参数,就用上一次保存的
         __setScrollTop: function(scTop) {
-            this.__pageModule.setScroll(scTop);
+            pageModuleCache[this.__pageId].setScroll(scTop);
         },
         __hideLoading: function() {
             //触发时必须是当前运行的模块时,才可以触发
-            if (controlMod.runningPage === this.__pageModule) {
+            if (controlMod.runningPage === pageModuleCache[this.__pageId]) {
                 loadingControl && clearTimeout(loadingControl);
                 loadingDOM && viewUtil.hide(loadingDOM);
             }
         },
         __loading: function() {
             controlMod.loading();
+        },
+        __closeKFC: function(){
+            //移除模块的fastClick touch监听
+            var pageModule = pageModuleCache[this.__pageId];
+            if(pageModule.fastClick){
+                pageModule.fastClick.destroy();
+                pageModule.fastClick = null;
+            }
+        },
+        __openKFC: function(options){ //这里可以自由修改配置参数
+            //开启页面的fastClick touch监听
+            var pageModule = pageModuleCache[this.__pageId];
+            var el = this.el;
+            if(FastClick && el){
+                el[0] && (el = el[0]);
+                options || (options = kfcConfig); //如果没有传递配置参数，就使用BK.config时的
+                //如果那时设置的是空，也没事
+                pageModule.fastClick && pageModule.fastClick.destroy();
+                pageModule.fastClick = new FastClick(el,options);
+            }
         }
     };
     Controller.prototype = {
@@ -186,58 +219,53 @@ define('$controller', ['$config', '$template'], function(require, exports) {
         },
         //执行跳转
         execPage: function(pageModule) {
-            var pageExports = pageModule.exports,
-                pageView = pageModule.pageView,
+            var curPageObj = pageModule.exports,
                 prevModule = this.runningPage,
-                prevExports,
-                prevView;
-
+                prevPageObj;
             //设置当前运行的模块
             this.runningPage = pageModule;
-
             //解决当前显示中的模块离开
             if (prevModule) {
-                prevExports = prevModule.exports;
+                prevPageObj = prevModule.exports;
                 this.prevPage = prevModule;
                 //这里的参数: 执行离开的模块的参数,当前显示的模块的参数 ,pageModule.params
-                prevExports.leave && prevExports.leave(prevModule.params);
+                prevPageObj.leave && prevPageObj.leave(prevModule.params);
                 BK.trigger('afterLeave', [pageModule.params]);
                 prevModule.saveScroll();
-                prevView = prevModule.pageView
-                if (prevView)
-                    prevView.parentNode.removeChild(prevView),
+                prevPageObj = prevModule.pageView;
+                if (prevPageObj)
+                    prevPageObj.parentNode.removeChild(prevPageObj),
                     prevModule.viewStatus = false;
             }
-
             //先触发新的模块,将结构显示显示到页面中
             pageModule.status > pageStatus.LOADED ?
                 pageModule.appendView() :
                 pageModule.init();
 
             BK.trigger('beforeEnter', [pageModule.params]);
-            //参数：当前模块的参数,上一个模块的参数 ,prevModule.params
-            pageExports.enter && pageExports.enter(pageModule.params);
-
+            //参数：当前模块的参数,上一个模块的参数 
+            curPageObj.enter && curPageObj.enter(pageModule.params);
             //前一个页面移除完毕后设置当前模块缓存住的y轴
             //如果此跳转是来自用户从页面点击进入的,则不设置y轴
             //如果是由浏览器或history引发的页面变更,则恢复y轴 
             pageModule.options.formUser ? pageModule.setScroll(1) : pageModule.setScroll(true) ;
+            curPageObj = prevModule = prevPageObj;
         },
         //加载页面模块
         loadPage: function(pageModule) {
             var that = this;
-            require.async(pageModule.pageID, function(module) {
+            require.async(pageModule.pageId, function(module) {
                 //将请求的模块进行保存
                 if (module) {
                     BK.extend(module, Controller.builtIn);
-                    module.__pageModule = pageModule;
+                    module.__pageId = pageModule.pageId;
                     pageModule.exports = module;
                     pageModule.status = pageStatus.LOADED;
                     that.execPage(pageModule);
                     //网络问题,请求失败,可以提示用户刷新页面
                 } else {
-                    BK.trigger('loadFail', [pageModule.pageID]);
-                    pageModuleCache[pageModule.pageID] = null;
+                    BK.trigger('loadFail', [pageModule.pageId]);
+                    pageModuleCache[pageModule.pageId] = null;
                 }
             });
         }

@@ -1,3 +1,4 @@
+/* eslint-disable */
 define('$DeferByPromise', function() {
 	/**
 		这里是做了一个基于Promise的defer类，

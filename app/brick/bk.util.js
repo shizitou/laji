@@ -1,3 +1,4 @@
+/* eslint-disable */
 define('$util', function() {
 	var util = {};
 	util.clone = function(obj) {

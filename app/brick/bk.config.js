@@ -1,3 +1,4 @@
+/* eslint-disable */
 define('$config', function() {
 	//这里都是框架默认的配置选项
 	return {
@@ -17,6 +18,13 @@ define('$config', function() {
 		ajaxCacheFilter: function(res) {
 			return !!res;
 		},
-		ajaxCacheHash: ''
+		ajaxCacheHash: '',
+		/*  开启的话直接配置 true 或者 {} 即可
+			touchBoundary: 10px
+			tapTimeout: 500
+			active: true
+			useMouseEvent: false
+		***/
+		fastClick: false,
 	};
 });
