@@ -83,6 +83,7 @@ define('$util', function() {
 	};
 	util.genPHash = function(page, params) {
 		params = params || {};
+		params = JSON.parse(JSON.stringify(params));
 		if (page) {
 			page = page.split('/');
 			params['ct'] = page[0] + (page[1] || '');
@@ -100,6 +101,10 @@ define('$util', function() {
 	//解析search参数
 	util.parseSearch = function(search) {
 			search = search || location.search;
+			if(!search){
+				return {};
+			}
+			search = search.charAt(0)==='?' ? search.slice(1) : search;
 			search = search.split('&');
 			var ln = search.length - 1,
 				option,

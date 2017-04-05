@@ -64,7 +64,7 @@ define('$controller', ['$config', '$template'], function(require, exports) {
             //这是为了让 init 里可以对DOM进行操作
             var view = exports.pageView;
             if (view) {
-                noopDiv.innerHTML = view;
+                noopDiv.innerHTML = template(view,{});
                 self.pageView = noopDiv.children[0];
                 noopDiv.innerHTML = "";
                 self.appendView();

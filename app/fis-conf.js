@@ -1,7 +1,7 @@
+fis.hook('bkcomponents');
 
-// fis.match('*.css', {
-//     url: '/brick/release$0'
-// });
-
-
-fis.config.set('roadmap.path.release',false);
+fis.match('/components/(**.html)',{
+	extras: {
+		bKUIComponent: true
+	}
+});

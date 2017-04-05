@@ -167,13 +167,13 @@ define('$http', ['$config'], function(require) {
 	}
 
 	function ajax(options) {
-		var result;
 		var url = options.url,
 			type = options.type,
 			data = options.data,
 			dataType = options.dataType,
 			success = options.success,
-			defer;
+			defer, result;
+		/**
 		if (options.cache) {
 			sessionStore.setHash(options.cacheHash);
 			result = sessionStore.get(url, type, data);
@@ -196,28 +196,33 @@ define('$http', ['$config'], function(require) {
 				return defer;
 			}
 		}
-
-		//发送请求
-		return xhr({
-			url: url,
-			type: type,
-			data: data,
-			dataType: dataType,
-			timeout: options.timeout,
-			cache: options.cache,
-			success: function(result) {
-				var pass;
-				if (options.cache) {
-					pass = typeof options.cacheFilter === 'function' ?
-						!!options.cacheFilter(result) : false;
-					pass && sessionStore.set(url, type, data, result);
-				}
-				success && success(result);
-			},
-			error: function(result) {
-				options.error && options.error(result);
+		//*/
+		options.success = function(result){
+			/**
+			var pass;
+			if (options.cache) {
+				pass = typeof options.cacheFilter === 'function' ?
+					!!options.cacheFilter(result) : false;
+				pass && sessionStore.set(url, type, data, result);
 			}
-		});
+			//*/
+			//将原有参数 传递给用户回调
+			success && success.apply(this,[].slice.call(arguments,0));
+		}
+		return xhr(options);
+		//发送请求
+		// return xhr({
+		// 	url: url,
+		// 	type: type,
+		// 	data: data,
+		// 	dataType: dataType,
+		// 	timeout: options.timeout,
+		// 	cache: options.cache,
+		// 	success: function(result) {
+		// 	},
+		// 	error: options.error,			
+		// 	complete: options.complete
+		// });
 	}
 	var http = {
 		ajax: function(options) {

@@ -17,7 +17,6 @@ define('$component', ['$template'], function(require, exports, module) {
     document.head.appendChild(style);
 
     function addStyle(css, prefixClass) {
-        var st = +new Date();
         css = css.replace(rep_style, function(all, key, val) {
             key = key.trim();
             all = key.charAt(0);
@@ -27,9 +26,6 @@ define('$component', ['$template'], function(require, exports, module) {
             }
             return key + val;
         });
-        setTimeout(function(){
-            console.log( +new Date - st );
-        },0);
         style.appendChild(document.createTextNode(css));
     }
 
@@ -97,6 +93,7 @@ define('$component', ['$template'], function(require, exports, module) {
         };
     }
 });
+
 define('$template', [], function(require) {
     //匹配模板标签
     var settings = {

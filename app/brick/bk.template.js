@@ -17,7 +17,14 @@ define('$component', ['$template'], function(require, exports, module) {
     document.head.appendChild(style);
 
     function addStyle(css, prefixClass) {
-        var st = +new Date();
+        //提出注释, 这里会对编译产生干扰
+        css = css.replace(/\/\*[\s\S]*?\*\//g,'');
+        // 先 提出@charset ''; 稍后再拼接上去
+        var charset = '';
+        css = css.replace(/@charset\s*['"][\w\d-_\.]*["'](\s*\;)/g,function(str){
+            charset = str;
+            return '';
+        });
         css = css.replace(rep_style, function(all, key, val) {
             key = key.trim();
             all = key.charAt(0);
@@ -27,9 +34,7 @@ define('$component', ['$template'], function(require, exports, module) {
             }
             return key + val;
         });
-        setTimeout(function(){
-            console.log( +new Date - st );
-        },0);
+        css = charset+'\n'+css;
         style.appendChild(document.createTextNode(css));
     }
 
@@ -89,7 +94,7 @@ define('$component', ['$template'], function(require, exports, module) {
             //处理css到页面当中
             if (compResObj.css && !compStyle) {
                 compObj.compStyle = compStyle = 'bkcomps-' + prefixId++;
-                setTimeout(addStyle, 4, compResObj.css, compStyle);
+                addStyle(compResObj.css, compStyle);
             }
             return addClassToRenView(
                 compResObj.complie(data, context), compStyle

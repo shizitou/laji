@@ -4,7 +4,10 @@
 		新增功能插件模块 $KFC。
 		提取开源fastClick代码为项目订制改写，新增点击态功能。
 		具体使用情况，见文档。
+	version: 3.7.6
+		暂时取消sessionStorage的缓存机制（有风险还需进一步讨论）
 	version: 3.7.5
+		$http 添加 complete 配置项
 		将crossOrigin变成配置项，默认不开启，
 		因为如果开启的话必须要服务器端进行配合才可以使用
    	version: 3.7.4

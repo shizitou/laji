@@ -23,7 +23,10 @@
 		新增功能插件模块 $KFC。
 		提取开源fastClick代码为项目订制改写，新增点击态功能。
 		具体使用情况，见文档。
+	version: 3.7.6
+		暂时取消sessionStorage的缓存机制（有风险还需进一步讨论）
 	version: 3.7.5
+		$http 添加 complete 配置项
 		将crossOrigin变成配置项，默认不开启，
 		因为如果开启的话必须要服务器端进行配合才可以使用
    	version: 3.7.4
@@ -922,7 +925,6 @@ define('$component', ['$template'], function(require, exports, module) {
     document.head.appendChild(style);
 
     function addStyle(css, prefixClass) {
-        var st = +new Date();
         css = css.replace(rep_style, function(all, key, val) {
             key = key.trim();
             all = key.charAt(0);
@@ -932,9 +934,6 @@ define('$component', ['$template'], function(require, exports, module) {
             }
             return key + val;
         });
-        setTimeout(function(){
-            console.log( +new Date - st );
-        },0);
         style.appendChild(document.createTextNode(css));
     }
 
@@ -1002,6 +1001,7 @@ define('$component', ['$template'], function(require, exports, module) {
         };
     }
 });
+
 define('$template', [], function(require) {
     //匹配模板标签
     var settings = {
@@ -1544,13 +1544,13 @@ define('$http', ['$config'], function(require) {
 	}
 
 	function ajax(options) {
-		var result;
 		var url = options.url,
 			type = options.type,
 			data = options.data,
 			dataType = options.dataType,
 			success = options.success,
-			defer;
+			defer, result;
+		/**
 		if (options.cache) {
 			sessionStore.setHash(options.cacheHash);
 			result = sessionStore.get(url, type, data);
@@ -1573,28 +1573,33 @@ define('$http', ['$config'], function(require) {
 				return defer;
 			}
 		}
-
-		//发送请求
-		return xhr({
-			url: url,
-			type: type,
-			data: data,
-			dataType: dataType,
-			timeout: options.timeout,
-			cache: options.cache,
-			success: function(result) {
-				var pass;
-				if (options.cache) {
-					pass = typeof options.cacheFilter === 'function' ?
-						!!options.cacheFilter(result) : false;
-					pass && sessionStore.set(url, type, data, result);
-				}
-				success && success(result);
-			},
-			error: function(result) {
-				options.error && options.error(result);
+		//*/
+		options.success = function(result){
+			/**
+			var pass;
+			if (options.cache) {
+				pass = typeof options.cacheFilter === 'function' ?
+					!!options.cacheFilter(result) : false;
+				pass && sessionStore.set(url, type, data, result);
 			}
-		});
+			//*/
+			//将原有参数 传递给用户回调
+			success && success.apply(this,[].slice.call(arguments,0));
+		}
+		return xhr(options);
+		//发送请求
+		// return xhr({
+		// 	url: url,
+		// 	type: type,
+		// 	data: data,
+		// 	dataType: dataType,
+		// 	timeout: options.timeout,
+		// 	cache: options.cache,
+		// 	success: function(result) {
+		// 	},
+		// 	error: options.error,			
+		// 	complete: options.complete
+		// });
 	}
 	var http = {
 		ajax: function(options) {
@@ -3543,27 +3548,218 @@ window.$ === undefined && (window.$ = Zepto)
 </script>
 <script>
 	BK.deplist({
-		'index': ['comp-dataview3','comp-dataview4',
-			'comp-dataview','comp-dataview2',
-			'jquery'
+		'index': ['dataview3.html','dataview4.html',
+			'dataview.html','dataview2.html'
 		],
-		'comp-dataview': ['comp-datahead','comp-datalist'],
-		'comp-dataview2': ['comp-datahead2','comp-datalist'],
-		'comp-dataview3': ['comp-datahead','comp-datalist2'],
-		'comp-dataview4': ['comp-datahead2','comp-datalist2'],
+		'dataview.html': ['datahead.html','datalist.html'],
+		'dataview2.html': ['datahead2.html','datalist.html'],
+		'dataview3.html': ['datahead.html','datalist2.html'],
+		'dataview4.html': ['datahead2.html','datalist2.html'],
 	});
 	BK.paths({
 		'index': './pages/index/js/index.js',
 		'index.css': './pages/index/css/index.css',
-		'comp-dataview': './components/comp-dataview.js',
-		'comp-dataview2': './components/comp-dataview2.js',
-		'comp-dataview3': './components/comp-dataview3.js',
-		'comp-dataview4': './components/comp-dataview4.js',
-		'comp-datahead': './components/comp-datahead.js',
-		'comp-datahead2': './components/comp-datahead2.js',
-		'comp-datalist': './components/comp-datalist.js',
-		'comp-datalist2': './components/comp-datalist2.js',
+		'dataview.html': './components/dataview/dataview.html.js',
+		'dataview2.html': './components/dataview2/dataview2.html.js',
+		'dataview3.html': './components/dataview3/dataview3.html.js',
+		'dataview4.html': './components/dataview4/dataview4.html.js',
+		'datahead.html': './components/datahead/datahead.html.js',
+		'datahead2.html': './components/datahead2/datahead2.html.js',
+		'datalist.html': './components/datalist/datalist.html.js',
+		'datalist2.html': './components/datalist2/datalist2.html.js'
 	});
+</script>
+<script>
+	var map = {
+    "res": {
+        "ajax.test.js": {
+            "uri": "/ajax.test.js",
+            "type": "js"
+        },
+        "brick/bk.config.js": {
+            "uri": "/brick/bk.config.js",
+            "type": "js"
+        },
+        "brick/bk.controller.js": {
+            "uri": "/brick/bk.controller.js",
+            "type": "js"
+        },
+        "brick/bk.ext.fastclick.js": {
+            "uri": "/brick/bk.ext.fastclick.js",
+            "type": "js"
+        },
+        "brick/bk.ext.router.js": {
+            "uri": "/brick/bk.ext.router.js",
+            "type": "js"
+        },
+        "brick/bk.http.js": {
+            "uri": "/brick/bk.http.js",
+            "type": "js"
+        },
+        "brick/bk.localstorage.js": {
+            "uri": "/brick/bk.localstorage.js",
+            "type": "js"
+        },
+        "brick/bk.template.js": {
+            "uri": "/brick/bk.template.js",
+            "type": "js"
+        },
+        "brick/bk.util.js": {
+            "uri": "/brick/bk.util.js",
+            "type": "js"
+        },
+        "brick/brick.js": {
+            "uri": "/brick/brick.js",
+            "type": "js"
+        },
+        "brick/module.ext.cache.js": {
+            "uri": "/brick/module.ext.cache.js",
+            "type": "js"
+        },
+        "brick/module.ext.upbychar.js": {
+            "uri": "/brick/module.ext.upbychar.js",
+            "type": "js"
+        },
+        "brick/module.js": {
+            "uri": "/brick/module.js",
+            "type": "js"
+        },
+        "components/datahead/datahead.css": {
+            "uri": "/components/datahead/datahead.css",
+            "type": "css"
+        },
+        "components/datahead2/datahead2.css": {
+            "uri": "/components/datahead2/datahead2.css",
+            "type": "css"
+        },
+        "components/datalist/datalist.css": {
+            "uri": "/components/datalist/datalist.css",
+            "type": "css"
+        },
+        "components/datalist2/datalist2.css": {
+            "uri": "/components/datalist2/datalist2.css",
+            "type": "css"
+        },
+        "components/dataview/dataview.css": {
+            "uri": "/components/dataview/dataview.css",
+            "type": "css"
+        },
+        "components/dataview2/dataview2.css": {
+            "uri": "/components/dataview2/dataview2.css",
+            "type": "css"
+        },
+        "components/dataview4/dataview4.css": {
+            "uri": "/components/dataview4/dataview4.css",
+            "type": "css"
+        },
+        "fastclick.js": {
+            "uri": "/fastclick.js",
+            "type": "js"
+        },
+        "fis-conf-origin.js": {
+            "uri": "/fis-conf-origin.js",
+            "type": "js"
+        },
+        "index.css": {
+            "uri": "/index.css",
+            "type": "css"
+        },
+        "modules/zepto/event.inline.js": {
+            "uri": "/modules/zepto/event.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/ajax.inline.js": {
+            "uri": "/modules/zepto/ajax.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/form.inline.js": {
+            "uri": "/modules/zepto/form.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/callbacks.inline.js": {
+            "uri": "/modules/zepto/callbacks.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/deferred.inline.js": {
+            "uri": "/modules/zepto/deferred.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/zepto.inline.js": {
+            "uri": "/modules/zepto/zepto.inline.js",
+            "type": "js"
+        },
+        "modules/defer.js": {
+            "uri": "/modules/defer.js",
+            "type": "js"
+        },
+        "modules/jquery.inline.js": {
+            "uri": "/modules/jquery.inline.js",
+            "type": "js"
+        },
+        "modules/sea.js": {
+            "uri": "/modules/sea.js",
+            "type": "js"
+        },
+        "modules/zepto/assets.inline.js": {
+            "uri": "/modules/zepto/assets.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/data.inline.js": {
+            "uri": "/modules/zepto/data.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/detect.inline.js": {
+            "uri": "/modules/zepto/detect.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/fx_methods.inline.js": {
+            "uri": "/modules/zepto/fx_methods.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/fx.inline.js": {
+            "uri": "/modules/zepto/fx.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/gesture.inline.js": {
+            "uri": "/modules/zepto/gesture.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/ie.inline.js": {
+            "uri": "/modules/zepto/ie.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/ios3.inline.js": {
+            "uri": "/modules/zepto/ios3.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/selector.inline.js": {
+            "uri": "/modules/zepto/selector.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/stack.inline.js": {
+            "uri": "/modules/zepto/stack.inline.js",
+            "type": "js"
+        },
+        "modules/zepto/touch.inline.js": {
+            "uri": "/modules/zepto/touch.inline.js",
+            "type": "js"
+        },
+        "pages/index/css/index.css": {
+            "uri": "/pages/index/css/index.css",
+            "type": "css"
+        },
+        "pages/index/js/big.css": {
+            "uri": "/pages/index/js/big.css",
+            "type": "css"
+        },
+        "pages/index/js/index.js": {
+            "uri": "/pages/index/js/index.js",
+            "type": "js"
+        }
+    },
+    "pkg": {}
+};
+	console.log(map);
 </script>
 <script>
 BK.config({
@@ -3587,7 +3783,7 @@ BK.config({
 BK.bind('afterRun',function(){
 	BK.alert.setEl( document.querySelector('#js-global-alert') );
 });
-BK.bind('loadFail', function(pageId){
+BK.bind('loadFail', function(pageId){ //ct
 	console.error(pageId+' is load fail');
 });
 BK.start();
