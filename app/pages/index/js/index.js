@@ -66,6 +66,10 @@ define('index',function(require) {
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 			// this.el[0].querySelector('.js-dataView').innerHTML = template('<%= $require("test.html") %>',{});
 			//*/
+			this.el[0].addEventListener('click',function(){
+				BK.link('shelf',{});
+			},false);
+			// console.log(FastClick);
 
 			/* 测试 $http 模块的cache是否生效 */
 			var xhr = $http.ajax({
