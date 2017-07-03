@@ -35,7 +35,7 @@ define('index',function(require) {
 	//*/
 	return {
 		el: '#page_index',
-		pageView: __inline('../html/index.html'),
+		pageView: "<div id=\"page_index\">\n\t<h1>INDEX PAGE</h1>\n\t<div class=\"dataview js-dataView\"></div>\n</div>",
 		init: function(params) {},
 		enter: function(params) {
 			var data = {
@@ -59,10 +59,10 @@ define('index',function(require) {
 				}
 			};
 			/* 测试模块引擎的自定义context是否可用 */ 
-			var dataStr = template(__inline('../tpl/index.tpl.html'),data,tools); 
-			var dataStr = template(__inline('../tpl/index.tpl.html')).call(tools,data);
-			var dataStr = template.call(tools, __inline('../tpl/index.tpl.html'), data); 
-			var dataStr = template.call(tools,__inline('../tpl/index.tpl.html'))(data); 
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('dataview.html') %>\n\t<%= $require('dataview2.html') %>\n\t<%= $require('dataview3.html') %>\n\t<%= $require('dataview4.html') %>\n</div>",data,tools); 
+			var dataStr = template("<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('dataview.html') %>\n\t<%= $require('dataview2.html') %>\n\t<%= $require('dataview3.html') %>\n\t<%= $require('dataview4.html') %>\n</div>").call(tools,data);
+			var dataStr = template.call(tools, "<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('dataview.html') %>\n\t<%= $require('dataview2.html') %>\n\t<%= $require('dataview3.html') %>\n\t<%= $require('dataview4.html') %>\n</div>", data); 
+			var dataStr = template.call(tools,"<div>\n\t<%= this.addPrefix('_TEST_THIS') %>\n\t<%= $require('dataview.html') %>\n\t<%= $require('dataview2.html') %>\n\t<%= $require('dataview3.html') %>\n\t<%= $require('dataview4.html') %>\n</div>")(data); 
 			this.el[0].querySelector('.js-dataView').innerHTML = dataStr;
 			// this.el[0].querySelector('.js-dataView').innerHTML = template('<%= $require("test.html") %>',{});
 			//*/

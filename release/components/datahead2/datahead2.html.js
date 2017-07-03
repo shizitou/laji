@@ -1,0 +1,1 @@
+define('datahead2.html',function (require, exports, module) {								module.exports = require('$component')('datahead2.html',{					tpl: "<header><%= title %></header>",					css: "header{\n\theight:30px;\n\tline-height:30px;\n\tfont-size:24px;\n\tfont-weight:bold;\n\tbackground: #f60;\n\t/*background: url(\"abd.jpg\");*/\n}"				});			})

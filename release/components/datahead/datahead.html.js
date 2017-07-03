@@ -1,0 +1,1 @@
+define('datahead.html',function (require, exports, module) {								module.exports = require('$component')('datahead.html',{					tpl: "<header><%= this.addPrefix(title) %></header>",					css: "header{\n\theight:30px;\n\tline-height:30px;\n\tfont-size:24px;\n\tfont-weight:bold;\n\tbackground: yellow;\n}"				});			})
