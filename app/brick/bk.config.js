@@ -26,5 +26,6 @@ define('$config', function() {
 			useMouseEvent: false
 		***/
 		fastClick: false,
+		bigPipe: false, // timeout 超时时间
 	};
 });

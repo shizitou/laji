@@ -7,7 +7,8 @@ define('$DeferByPromise', function() {
 			$.Deferred(fn) 这里的fn将接受到原生Promise的两个触发方法
 		处理了fail队列触发时异常处理
 	*/
-	if (!window.Promise) return;
+	if (!window.Promise)
+		return console.error('当前浏览器不支持window.Promise | ' + navigator.userAgent);
 
 	function Deferred() {
 		var self = this;
@@ -138,6 +139,8 @@ define('$dataCacheBySession', function(require) {
 });
 define('$http', ['$config'], function(require) {
 	var config = require('$config'),
+		bigPipe = require('$bigPipe'),
+		Defer = require('$DeferByPromise'),
 		xhr,
 		Deferred, sessionStore;
 
@@ -172,49 +175,104 @@ define('$http', ['$config'], function(require) {
 	}
 
 	function ajax(options) {
-		var url = options.url,
-			type = options.type,
-			data = options.data,
-			dataType = options.dataType,
-			success = options.success,
-			defer, result;
-		/**
-		if (options.cache) {
-			sessionStore.setHash(options.cacheHash);
-			result = sessionStore.get(url, type, data);
-			//根据请求类型返回对应结果： json,text
-			if (result && dataType === 'json') {
-				try {
-					result = JSON.parse(result);
-				} catch (_e) {};
+		var bigPipeTip;
+		var xhrForBigPipe;
+		var deferForBigPipe;
+		if (options.$bigPipe && bigPipe) { //启用了 $bigpipe
+			bigPipeTip = '-这里是$bigPipe的xhr中间层-';
+			xhrForBigPipe = {
+				_aborted: false,
+				open: function(){
+					// console.log(bigPipeTip+'open');
+				},
+				abort: function(statusText) {
+					// console.log(bigPipeTip+'abort');
+					xhrForBigPipe._aborted = statusText || true;
+				},
+				getAllResponseHeaders: function() {},
+				getResponseHeader: function(key) { 
+					// console.log(bigPipeTip+'getResponseHeader');
+					return 'text/plain'; 
+				},
+				setRequestHeader: function(name, value) {
+					// console.log(bigPipeTip+'setRequestHeader');
+				},
+				overrideMimeType: function(type) {
+					// console.log(bigPipeTip+'overrideMimeType');
+				},
+				statusCode: function(map) {
+					// console.log(bigPipeTip+'statusCode');
+				},
+				send: function(){
+					// console.log(bigPipeTip+'send');
+				},
+				readyState: 1,
+				status: 0,
+				responseText: '',
+			};
+			options.xhr = function(){
+				return xhrForBigPipe;
 			}
-			if (result) {
-				if (Deferred) { //创建一个defer对象，将回调添加进去
-					defer = new Deferred();
-					success && defer.done(success);
+			deferForBigPipe = xhr(options);
+			//读取bigPipe缓存中的数据
+			bigPipe.use(options.$bigPipe, function(pipeData) {
+				//如果已经被执行了取消，则不需要执行后续了
+				if(xhrForBigPipe._aborted){
+					console.log('###### ',xhrForBigPipe._aborted);
+					_readyStateChange({
+						readyState: 4,
+						status: 0,
+						statusText: xhrForBigPipe._aborted === true ? '' : xhrForBigPipe._aborted
+					});
+				}else if(pipeData) { //有缓存的时候,直接触发 xhr 的返回操作
+					typeof pipeData === 'string' || (pipeData = JSON.stringify(pipeData))
+					_readyStateChange({
+						readyState: 4,
+						status: 200,
+						responseText: pipeData
+					});
+				} else { //没缓存的时候，发起请求
+					var sendXhr;
+					delete options.xhr;
+					if(options.beforeSend) delete options.beforeSend;
+				    if(options.success) delete options.success;
+				    if(options.error) delete options.error;
+				    if(options.complete) delete options.complete;
+				    options.complete = function(){
+				    	delete options.complete;
+				    	if(xhrForBigPipe._aborted){
+				    		_readyStateChange({
+								readyState: 4,
+								status: 0,
+								statusText: xhrForBigPipe._aborted === true ? '' : xhrForBigPipe._aborted
+							});
+				    	}else{
+				    		_readyStateChange({
+					    		readyState: sendXhr.readyState,
+								response: sendXhr.response,
+								responseText: sendXhr.responseText,
+								responseType: sendXhr.responseType,
+								responseURL: sendXhr.responseURL,
+								responseXML: sendXhr.responseXML,
+								state: sendXhr.state,
+								status: sendXhr.status,
+								statusText: sendXhr.statusText
+					    	});
+				    	}
+				    }
+					sendXhr = xhr(options);
 				}
-				setTimeout(function() {
-					defer ?
-						defer.resolve(result, 'success') :
-						success && success(result, 'success');
-				}, 4);
-				return defer;
-			}
+			});
+			return deferForBigPipe;
+		} else {
+			return xhr(options);
 		}
-		//*/
-		options.success = function(result) {
-			/**
-			var pass;
-			if (options.cache) {
-				pass = typeof options.cacheFilter === 'function' ?
-					!!options.cacheFilter(result) : false;
-				pass && sessionStore.set(url, type, data, result);
+		function _readyStateChange(copyXhr){
+			for(var n in copyXhr){
+				xhrForBigPipe[n] = copyXhr[n];
 			}
-			//*/
-			//将原有参数 传递给用户回调
-			success && success.apply(this, [].slice.call(arguments, 0));
+			xhrForBigPipe.onreadystatechange();
 		}
-		return xhr(options);
 	}
 	var http = {
 		ajax: function(options) {
@@ -231,6 +289,8 @@ define('$http', ['$config'], function(require) {
 				(options.cacheFilter = config.ajaxCacheFilter);
 			options.cacheHash ||
 				(options.cacheHash = config.ajaxCacheHash);
+			options.$bigPipe ||
+				(options.$bigPipe = config.ajax$bigPipe);
 			return ajax(options);
 		},
 		get: function( /* url, data, success, dataType */ ) {

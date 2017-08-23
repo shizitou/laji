@@ -1,5 +1,21 @@
 /* eslint-disable */
 /*
+	TODO: 
+		解决循环引用的问题
+		解决重复发起模块加载请求的问题
+	version: 4.4
+		brick强制支持 Promise 标准，polyfill采用的是 then/promise 
+		对 Promise 实例添加 .done 扩展方法,用于将捕捉到的异常抛出到window
+	version: 4.3
+		新增 对 匿名模块的支持
+	version: 4.2.2
+        新增BK.bind(insertCSS,function(css){}) 全局事件
+    version: 4.2.1
+		修正 upbychar 插件的更新机制：
+			如果定义的模块来自于本地存储，则不再次调用本地存储
+			IOS7,8从接口传递过来的字符串与函数进行 toString() 之后的不同
+	version: 4.2.0
+		新增 bigpipe 功能
 	version: 4.1.4
 		优化 $from, $to,将其位置移到第二位参数
 	version: 4.1.3
@@ -58,9 +74,9 @@
 **/
 (function(global, undefined) {
 	'use strict';
-	var moduleCache = {};
+	
 	var modCore = {
-		version: '4.1.3',
+		version: '4.4',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时(秒)
 			paths: {}, // 模块对应的路径
@@ -70,6 +86,10 @@
 			crossOrigin: false, //发起JS加载时，是否带有改属性
 		}
 	};
+	//所有执行了define之后的模块都会被缓存到这个对象中
+	var moduleCache = {};
+	//所有define时没有id的模块都会暂存到这里，等待认领
+	var lostModule = [];
 	/**
 	config: 在config之后触发(可以用来对配置信息进行一些处理)  
 	defined: 在defined之后触发(可以用来对处理好id,deps,fn进行缓存) 
@@ -96,7 +116,9 @@
 			return undefined;
 		}
 	};
+	//这个变量是个标记，当解析完deplist后，加载的模块中含有deps数组，则需要重新进行一遍解析运算
 	var deplistChange = false;
+	//配置信息对象
 	var coreConfig = modCore.configs;
 	// 获取模块在配置中对应的别名
 	function parsePaths(id) {
@@ -115,13 +137,6 @@
 	}
 
 	function define(id, deps, factory) {
-		
-		//TODO文档的上差异化的内容需要补充下
-
-		//TODO 按照路径加载这种模块，改如何处理？https://github.com/ftlabs/fastclick/blob/master/lib/fastclick.js#L832-L834（启翔发起）
-
-		//TODO 解决循环引用的问题（启翔发起）
-		
 		//处理参数
 		var argsLen = arguments.length;
 		// define(factory)
@@ -147,8 +162,13 @@
 				mod.dependencies = deps || [];
 				mod.factory = factory;
 				mod.status = STATUS.SAVED;
-				mounts.dispatch('defined', [id, deps, factory]);
+				mounts.dispatch('defined', [mod.clone()]);
 			}
+		}else{
+			lostModule.push({
+				dependencies: deps || [],
+				factory: factory,
+			});
 		}
 	};
 	define.amd = {}; //为了让amd模块进行 define包装报错,比如 jquery
@@ -169,7 +189,12 @@
 		mounts.remove(node);
 		return this;
 	};
-	//接收要加载模块的ID集合
+	/* 	接收要加载模块的ID集合
+	 * 	ids: 一定是个数组，如果开启combo,则这里会接收到几个id组合的数组
+	 * 		[id,id,id]
+	 * 	如果没有开启combo,则是一个一个的请求，这里接受到的就是只有一个长度的数组
+	 * 		[id]
+	 **************/
 	define.load = function(ids, loaded) {
 		if (!ids.length) {
 			setTimeout(loaded, 4);
@@ -180,26 +205,40 @@
 			直接进行加载
 		****/
 		var paths = coreConfig.paths;
-		var fetchUrl = [];
+		var fetchModules = [];
+		//过滤掉 HTTP开头的请求
 		for (var i = ids.length - 1; i >= 0; i--) {
 			var path = paths[ids[i]];
 			if (/^(http:\/\/|https:\/\/)/.test(path)) {
-				fetchUrl.push(path);
+				// fetchModules.push(path);
+				fetchModules.push({
+					id: ids[i],
+					url: path,
+				});
 				ids.splice(i, 1)
 			}
 		}
 		//处理加载路径
 		if (ids.length) {
+			var isCombo = ids.length === 1 ? false : true;
+			var pushObj = {
+				id: isCombo ? 'COMBO' : ids[0],
+				url: '',
+			}
+			//生成请求的URL，这里可能是进行combo处理，也可能只是单个URL
 			var queryUrl = mounts.dispatch('genUrl', [ids]);
 			if (type(queryUrl) !== 'string') {
 				queryUrl = Module.genUrl(ids);
 			}
-			fetchUrl.push(queryUrl);
+			// fetchModules.push(queryUrl);
+			pushObj['url'] = queryUrl;
+			fetchModules.push(pushObj);
 		}
+
 		/* 并发加载模块 */
-		var waiting = fetchUrl.length; //请求的url个数
-		fetchUrl.forEach(function(url) { //真正的请求地址
-			define.fetch(url, function(status) {
+		var waiting = fetchModules.length; //请求的url个数
+		fetchModules.forEach(function(modObj) { //真正的请求地址
+			define.fetch(modObj, function(status) {
 				--waiting || loaded(status);
 			});
 		});
@@ -208,7 +247,7 @@
 		var doc = document;
 		var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 		var baseElement = head.getElementsByTagName("base")[0];
-		return function(url, loaded) {
+		return function(modObj, loaded) {
 			//使用js标签进行加载
 			var node = doc.createElement("script");
 			var tid = setTimeout(function() {
@@ -216,12 +255,29 @@
 				nodeHandle('TIMEOUT');
 			}, (coreConfig.timeout || 15) * 1000);
 			node.async = true;
-			if(coreConfig.crossOrigin){
+			if (coreConfig.crossOrigin) {
 				node.crossOrigin = true;
 			}
-			node.src = url;
+			node.src = modObj.url;
+			//这里得把ID穿过来，而且还得考虑Combo问题
+			node.dataset.requiremodule = modObj.id;
 			if ('onload' in node) {
-				node.onload = function() {
+				node.onload = function(evt) {
+					var node = evt.currentTarget || evt.srcElement;
+					var modId = node.dataset.requiremodule;
+					//一次请求多个模块时，不做处理
+					if(modId==='COMBO'){
+						return nodeHandle('LOAD');
+					}
+					var module = Module.get(modId); // nulll
+					//状态已经是保存成功了，说明这里模块是有ID的
+					if(module.status !== STATUS.SAVED){
+						//走到这里的模块，在执行时没有defineId,从 lostModule 中领取一个
+						//领取到模块后，再次执行define
+						var findModContent = lostModule.shift();
+						module.undefinedId = true;
+						define(modId,findModContent.dependencies,findModContent.factory);
+					}
 					clearTimeout(tid);
 					nodeHandle('LOAD');
 				};
@@ -277,10 +333,21 @@
 		this.dependencies = [];
 		this.factory = undefined;
 		this.exports = undefined;
-		//onload的监听函数
-		this.loaded = [];
+		// 没有定义ID的UMD模块这里会被设置成true,
+		this.undefinedId = false;
 		//模块的状态
 		this.status = STATUS.INIT;
+		this.loaded = [];
+	}
+	//onload的监听函数
+	// Module.prototype.loaded = [];
+	//获取最基本的属性复制品
+	Module.prototype.clone = function(){
+		var obj = {};
+		for(var n in this){
+			obj[n] = this[n];
+		}
+		return obj;
 	}
 	Module.prototype.init = function() {
 		//取出真实路径
@@ -332,39 +399,39 @@
 	//加载完毕后来触发,这里需要解析自身模块的依赖关系到关系表中,并触发自身的回调
 	Module.prototype.load = function() {
 		//当factory不为空时,解析自身parse
-		if (this.factory)
-			this.dependencies.length && this.parseDepend();
+		this.factory && this.dependencies.length && this.parseDepend();
 		each(this.loaded, function(load) {
 			load();
 		});
 	}
 	Module.prototype.parseDepend = function() {
-			// array
-			var depend = this.dependencies,
-				deplist = coreConfig.deplist,
-				self = this.id,
-				// string, array, null
-				selfDep = deplist[self],
-				depsLn, i;
-			if (!selfDep || type(selfDep) === 'string') {
-				selfDep = deplist[self] = selfDep ? [selfDep] : [];
-			}
-			depsLn = selfDep.length;
-			each(depend, function(newDep) {
-				var isSame = false;
-				for (i = 0; i < depsLn; i++) {
-					if (selfDep[i] === newDep) {
-						isSame = true;
-						break;
-					}
-				}
-				if (!isSame) {
-					deplistChange = true;
-					selfDep.push(newDep);
-				}
-			});
+		// array
+		var depend = this.dependencies,
+			deplist = coreConfig.deplist,
+			modId = this.id,
+			// string, array, null
+			selfDep = deplist[modId],
+			depsLn, i;
+		if (!selfDep || type(selfDep) === 'string') {
+			selfDep = deplist[modId] = selfDep ? [selfDep] : [];
 		}
-		//获取模块,这里会进行缓存
+		depsLn = selfDep.length;
+		each(depend, function(newDep) {
+			var isSame = false;
+			for (i = 0; i < depsLn; i++) {
+				if (selfDep[i] === newDep) {
+					isSame = true;
+					break;
+				}
+			}
+			if (!isSame) {
+				deplistChange = true;
+				selfDep.push(newDep);
+			}
+		});
+	}
+
+	//获取模块,这里会进行缓存
 	Module.get = function(modId) {
 		var module = moduleCache[modId]
 		if (!module) {
@@ -406,6 +473,7 @@
 			//如果是有缓存的话,这里会将modId模块中的依赖直接解析到依赖表中
 			pushToNeed(modId);
 			//查询出当前模块的依赖模块列表
+			//这是一个递归,每一个依赖都进行递归查询，每次返回的数组都最终合并到一起，返回到顶级的 each
 			each(getDepsModule(modId), function(modId) {
 				//添加模块到需要加载的列表中
 				pushToNeed(modId);
@@ -413,7 +481,7 @@
 		});
 		return needModules;
 
-		//return [] || null;
+		//return [];
 		function getDepsModule(modId) {
 			var result = [],
 				deps;
@@ -428,6 +496,7 @@
 		}
 
 		function pushToNeed(modId) {
+			//在这里接入别名挂载点
 			if (!needModules[modId]) {
 				needModules[modId] = Module.get(modId);
 			}
@@ -515,6 +584,7 @@
 		}
 		mounts.dispatch('config');
 	};
+
 	function comboPaths(obj) { //{key: value}
 		var pathsCon = coreConfig.paths; // {}
 		each(obj, function(val, key) {
@@ -533,6 +603,7 @@
 		//这里只是经过
 		function process() {
 			/*
+				deplistChange能发生改变的主要是因为 define(,[dep1,dep2],fun) 有了依赖
 				当经历过千山万苦在回到这里的时候,
 				早有的记忆可能已经改变,
 				无奈你需要重回起点，再次拾起那“遗失的记忆”
@@ -567,14 +638,7 @@
 	};
 	modCore.require = function(id) {
 		return Module.get(id).exec()
-	}
-	define('$insertCSS', function() {
-		return function(cssStr) {
-			var node = document.createElement('style');
-			node.appendChild(document.createTextNode(cssStr));
-			document.head.appendChild(node);
-		};
-	});
+	}	
 
 	global.define = define;
 	global.module = modCore;

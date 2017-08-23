@@ -47,16 +47,20 @@
 			}
 		}
 		define.unmount('config');
-	}).mount('defined', function(id, deps, factory) {
+	}).mount('defined', function(module) {
 		var self = this;
 		var configs = self.configs;
 		if (!configs.cache) {
 			return;
 		}
-		//缓存到本地
-		if (id.charAt(0) !== '$') {
+		var id = module.id;
+		// $开头 					的模块为系统模块，不进行缓存
+		// module.undefinedId:true 	的模块时没有定义ID的匿名模块，不进行缓存
+		if (id.charAt(0) !== '$' && !module.undefinedId) {
+			var deps = module.dependencies || [];
+			//缓存到本地
 			try {
-				localStorage.setItem(configs.prefix + id, deps.join(',') + '@@' + factory.toString());
+				localStorage.setItem(configs.prefix + id, deps.join(',') + '@@' + module.factory.toString());
 			} catch (e) {
 				self.config({
 					cache: false

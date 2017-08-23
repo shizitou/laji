@@ -17,10 +17,11 @@
 </body>
 </html>
 <script>
+	// window.Promise = undefined;
 	/* 载入框架 */
 	__inline('./brick/module.js');
 	/* module.ext.*系列一定要放到module.js之后 */
-	__inline('./brick/module.ext.cache.js');
+	/* __inline('./brick/module.ext.cache.js'); */
 	__inline('./brick/module.ext.upbychar.js'); 
 	/* bk系列的一定要放到module系列之后 */
 	__inline('./brick/bk.util.js');
@@ -28,17 +29,30 @@
 	__inline('./brick/bk.template.js');
 	__inline('./brick/bk.controller.js');
 	__inline('./brick/bk.ext.router.js'); 
+	__inline('./brick/bk.ext.bigpipe.js'); 
 	__inline('./brick/bk.http.js');
 	/* 这个文件一定要放最后,因为此处用到了：module.use  */
 	__inline('./brick/brick.js');
 	
 	/* 其他业务基础模块(非必须) */
 	__inline('./modules/zepto/zepto.inline.js');
+
+	/* Promise polyfill */
+	/* __inline('./brick/bk.ext.promise.js'); */
+	// var p = new Promise(function(resolve,reject){
+	// 	var i=0;
+	// 	var j = i+m;
+	// 	// throw new Error('这是个自定义的业务逻辑异常');
+	// });
+	// p.done();
+	// p.catch(function(reson){
+	// 	console.log('reson: ',reson);
+	// });
 </script>
 <script>
 	BK.deplist({
 		'index': ['dataview3.html','dataview4.html',
-			'dataview.html','dataview2.html'
+			'dataview.html','dataview2.html','index.css'
 		],
 		'dataview.html': ['datahead.html','datalist.html'],
 		'dataview2.html': ['datahead2.html','datalist.html'],
@@ -55,20 +69,29 @@
 		'datahead.html': './components/datahead/datahead.html.js',
 		'datahead2.html': './components/datahead2/datahead2.html.js',
 		'datalist.html': './components/datalist/datalist.html.js',
-		'datalist2.html': './components/datalist2/datalist2.html.js'
+		'datalist2.html': './components/datalist2/datalist2.html.js',
 	});
-</script>
-<script>
-	var map = __RESOURCE_MAP__;
-	console.log(map);
+	BK.paths({
+		'umdMod1': './test.umd1.js',
+		'umdMod2': './test.umd2.js',
+		'umdMod3': './test.umd3.js',
+		'umdMod4': './test.umd4.js',
+		'umdMod5': './test.umd5.js',
+		'umdMod6': './test.umd6.js',
+		'umdMod7': './test.umd7.js',
+		'umdMod8': './test.umd8.js',
+		'umdMod9': './test.umd9.js',
+		'umdMod10': './test.umd10.js',
+		'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js',
+	})
 </script>
 <script>
 BK.config({
 	/* 默认控制器,老框架的ctac */
 	defController: 'index',
 	loading: document.querySelector('#js-global-loading'),
-	// cache: true,
-	hash: '3.0.2',
+	cache: true,
+	hash: '2017.0709.4',
 	baseUrl: '/',
 	// combo: function (mods) {
 	// 	var baseUrl = '/combo.js??';
@@ -76,9 +99,6 @@ BK.config({
 	// },
 	// ajaxCache: true,
 	// ajaxCacheHash: '~~',
-	paths: {
-		'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js',
-	},
 	// crossOrigin: true,
 });
 BK.bind('afterRun',function(){
@@ -87,5 +107,15 @@ BK.bind('afterRun',function(){
 BK.bind('loadFail', function(pageId){ //ct
 	console.error(pageId+' is load fail');
 });
+BK.bind('insertCSS', function(orginCss){
+	var styleNode = document.createElement('style');
+	styleNode.appendChild(document.createTextNode('h1{\
+		margin-bottom:10px;\
+		background:red;\
+		text-align:center\
+	}'));
+	return styleNode;
+})
 BK.start();
+BK.$bigPipe.set('test-1','---bigpipe---的数据');
 </script>

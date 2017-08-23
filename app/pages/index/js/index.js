@@ -1,4 +1,6 @@
 define('index',function(require) {
+	require('index.css'); //使用CSS模块
+	
 	var ls = require('$localStorage');
 	var template = require('$template');
 	var $http = require('$http');
@@ -7,21 +9,21 @@ define('index',function(require) {
 	require('dataview3.html');
 	//这里是一个编译过的函数，并不是字符串，使用的时候需要传入数据即可
 	var a = require('dataview4.html'); 
-	console.log(a({
-		"title": "包质量宠文，不看后悔",
-		"desc": "保质保量，一生一世一双人，宠文，爽文。保质保量，一生一世一双人，宠文，爽文。",
-		"items": [{
-			"title": "淡定为妃",
-			"author": "风过水无痕",
-		}, {
-			"title": "八宝妆",
-			"author": "月下蝶影",
-		}, {
-			"title": "那村那人那傻瓜",
-			"author": "福宝",
-		}],
-		"flag": "new"
-	}));
+	// console.log(a({
+	// 	"title": "包质量宠文，不看后悔",
+	// 	"desc": "保质保量，一生一世一双人，宠文，爽文。保质保量，一生一世一双人，宠文，爽文。",
+	// 	"items": [{
+	// 		"title": "淡定为妃",
+	// 		"author": "风过水无痕",
+	// 	}, {
+	// 		"title": "八宝妆",
+	// 		"author": "月下蝶影",
+	// 	}, {
+	// 		"title": "那村那人那傻瓜",
+	// 		"author": "福宝",
+	// 	}],
+	// 	"flag": "new"
+	// }));
 
 	// var jq = require('jquery');
 	/**
@@ -71,7 +73,7 @@ define('index',function(require) {
 			},false);
 			// console.log(FastClick);
 
-			/* 测试 $http 模块的cache是否生效 */
+			/* 测试 $http 模块的cache是否生效 *
 			var xhr = $http.ajax({
 				url: '/a/b/../c/../../ajax.test.js',
 				type: 'POST',
@@ -79,6 +81,7 @@ define('index',function(require) {
 					size: 10,
 					page: 2,
 				},
+				$bigPipe: 'test-1',
 				// cache: true,
 				// cacheFilter: function(res){
 				// 	return res === 10;
@@ -86,16 +89,16 @@ define('index',function(require) {
 				cacheHash: '',
 				dataType: 'text',
 				success: function(res,status){
-					console.log('success: ');
-					console.log(arguments);
+					console.log('success: ',res);
+					// console.log(arguments);
 					// console.log('options.success: ',res);
 				},
 				complete: function(res){
-					console.log('complete: ');
-					console.log(arguments);
+					// console.log('complete: ');
+					// console.log(arguments);
 				}
 			}).done(function(res,status){
-				console.log('done: ',arguments);
+				// console.log('done: ',arguments);
 			});
 			// setTimeout(function(){ xhr.done(function(res,status){
 			// 	console.log('timeout-done: ',res);
@@ -115,10 +118,22 @@ define('index',function(require) {
 				});
 			},1000);
 			//*/
-			console.log('enter: ',arguments[1]);
+
+			/* test load umd module */
+			for(var i=1;i<=10;i++){
+				(function(i){
+					require.async('umdMod'+i, function(umdMod){
+						console.log('load umdMod'+i,umdMod);
+					});
+				})(i);
+			}
+			require.async('./test.umd1.js', function(jquery){
+				// define(function(){ exports.jquery = {} })
+				console.log(jquery);
+			});
+			//*/
 		},
 		leave: function() {
-			console.log('leave: ',arguments[1]);
 		}
 	}
 });
@@ -128,7 +143,6 @@ define('shelf',function(){
 		pageView: '<div id="page_shelf">书架页</div>',
 		init: function(){},
 		enter: function(){
-			console.log(arguments[1]);
 		}
 	}
 })
