@@ -3,6 +3,8 @@
 	TODO: 
 		解决循环引用的问题
 		解决重复发起模块加载请求的问题
+	version: 4.4.1
+		修复: 加载COMBO请求时，未处理异步定时器，已添加。
 	version: 4.4
 		brick强制支持 Promise 标准，polyfill采用的是 then/promise 
 		对 Promise 实例添加 .done 扩展方法,用于将捕捉到的异常抛出到window
@@ -76,7 +78,7 @@
 	'use strict';
 	
 	var modCore = {
-		version: '4.4',
+		version: '4.4.1',
 		configs: {
 			timeout: 15, // 请求模块的最长耗时(秒)
 			paths: {}, // 模块对应的路径
@@ -263,6 +265,7 @@
 			node.dataset.requiremodule = modObj.id;
 			if ('onload' in node) {
 				node.onload = function(evt) {
+					clearTimeout(tid);
 					var node = evt.currentTarget || evt.srcElement;
 					var modId = node.dataset.requiremodule;
 					//一次请求多个模块时，不做处理
@@ -278,7 +281,6 @@
 						module.undefinedId = true;
 						define(modId,findModContent.dependencies,findModContent.factory);
 					}
-					clearTimeout(tid);
 					nodeHandle('LOAD');
 				};
 			} else {
